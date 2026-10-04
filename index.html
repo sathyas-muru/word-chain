@@ -1,0 +1,4190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Word Chains</title>
+
+<!-- QRCode.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+:root{
+  --gold:#e0b83a;
+  --mint:#7fd1a6;
+  --card:#f7f1e1;
+  --ink:#1d2b26;
+  --green:#1f5545;
+  --dark:#0e271f;
+}
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(circle at 50% 0,#1f5545,#0e271f);
+  font-family:system-ui,-apple-system,sans-serif;
+  color:#fff;
+}
+.wrap{max-width:420px;margin:0 auto;padding:22px 18px}
+.scr{display:none}
+.scr.on{display:block}
+
+h1{
+  font-family:Georgia,serif;
+  text-align:center;
+  font-size:36px;
+  margin:4px 0 2px;
+  letter-spacing:1px
+}
+h2{
+  font-family:Georgia,serif;
+  text-align:center;
+  margin:8px 0 14px
+}
+.sub{
+  text-align:center;
+  opacity:.75;
+  margin:0 0 16px;
+  font-size:14px
+}
+.logo{
+  display:block;
+  width:78%;
+  max-width:300px;
+  margin:18px auto 6px
+}
+.btn{
+  display:block;
+  width:100%;
+  padding:15px;
+  margin:10px 0;
+  border:0;
+  border-radius:14px;
+  font-size:18px;
+  font-weight:700;
+  background:var(--gold);
+  color:var(--ink);
+  cursor:pointer
+}
+.btn.sec{
+  background:transparent;
+  color:#fff;
+  border:2px solid #ffffff55
+}
+.btn:disabled{opacity:.45}
+input,select{
+  width:100%;
+  padding:14px;
+  margin:6px 0;
+  border-radius:12px;
+  border:0;
+  font-size:17px
+}
+select{background:#fff;color:var(--ink)}
+.completedToggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin:16px 0 8px;border:2px solid var(--gold);border-radius:12px;background:rgba(224,184,58,.18);color:#fff;font-size:18px;font-weight:800;cursor:pointer;text-align:left}
+.completedToggle:hover{background:rgba(224,184,58,.28)}
+.winnerCelebration{text-align:center;padding:18px 14px;border:2px solid var(--gold);background:linear-gradient(135deg,rgba(224,184,58,.22),rgba(127,209,166,.16))}
+.winnerTrophy{font-size:42px;line-height:1;margin-bottom:6px}
+.winnerLabel{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;opacity:.7}
+.winnerName{font-family:Georgia,serif;font-size:28px;font-weight:800;margin-top:3px}
+.card{
+  background:var(--card);
+  color:var(--ink);
+  border-radius:16px;
+  padding:14px;
+  margin:12px 0
+}
+.err{
+  color:#ffb4a8;
+  min-height:20px;
+  font-size:14px;
+  text-align:center
+}
+.row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px
+}
+.stepper{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  margin:14px 0
+}
+.stepper button{
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  border:0;
+  font-size:30px;
+  font-weight:700;
+  background:var(--gold);
+  color:var(--ink)
+}
+.stepper button:disabled{opacity:.35}
+#tval,#mval{
+  font-size:24px;
+  font-weight:700;
+  min-width:150px;
+  text-align:center
+}
+#boardwrap{position:relative}
+#board{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none
+}
+.t{
+  transition:background .15s;
+  aspect-ratio:1;
+  background:#fff8e1;
+  color:var(--ink);
+  border:3px solid var(--gold);
+  border-radius:14px;
+  font-size:32px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center
+}
+.t.on{
+  background:var(--gold);
+  transform:scale(.94)
+}
+#pause{
+  position:absolute;
+  inset:-6px;
+  background:#12332af2;
+  border-radius:16px;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:16px
+}
+#pause.on{display:flex}
+#cur{
+  min-height:40px;
+  font-size:28px;
+  font-weight:800;
+  text-align:center;
+  letter-spacing:3px;
+  color:var(--gold)
+}
+.msg{
+  min-height:22px;
+  font-size:14px;
+  text-align:center;
+  opacity:.9
+}
+.chip{
+  display:inline-block;
+  background:#ffffff1f;
+  border-radius:8px;
+  padding:3px 9px;
+  margin:3px;
+  font-size:14px
+}
+.card .chip{background:#0000000f}
+.chip.best{
+  background:var(--gold);
+  color:var(--ink);
+  font-weight:800
+}
+.big{
+  font-size:56px;
+  font-weight:800;
+  text-align:center;
+  color:var(--gold);
+  line-height:1
+}
+.warn{
+  background:#ffe0b2;
+  color:#5d3a00;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:13px;
+  margin-bottom:10px;
+  display:none
+}
+h3{
+  margin:16px 0 4px;
+  font-size:16px
+}
+.bestcard{
+  background:var(--card);
+  color:var(--ink);
+  border-radius:20px;
+  padding:18px;
+  text-align:center;
+  margin:14px 0
+}
+.bestcard .lbl{
+  font-size:14px;
+  opacity:.7;
+  text-transform:uppercase;
+  letter-spacing:2px
+}
+.bignum{
+  font-size:84px;
+  font-weight:800;
+  color:#b8860b;
+  line-height:1.1
+}
+.t.ok{
+  background:#4caf50;
+  border-color:#2e7d32;
+  color:#fff
+}
+#msg{
+  font-weight:700;
+  font-size:17px;
+  color:#ffd9a0;
+  min-height:26px;
+  text-align:center;
+  margin:6px 0 0
+}
+.link{
+  background:none;
+  border:0;
+  color:#ffffffaa;
+  text-decoration:underline;
+  font-size:14px;
+  width:100%;
+  padding:8px;
+  cursor:pointer
+}
+
+.sectionTitle{
+  font-size:13px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  opacity:.65;
+  margin:20px 0 8px
+}
+
+.groupCard{
+  background:#ffffff10;
+  border:1px solid #ffffff20;
+  border-radius:15px;
+  padding:15px;
+  margin:10px 0
+}
+.groupCard h3{
+  margin:0 0 5px;
+  font-size:19px
+}
+.groupCard .small{
+  opacity:.7;
+  font-size:13px
+}
+
+.member{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid #00000012
+}
+.member:last-child{border-bottom:0}
+
+.rankRow{
+  display:grid;
+  grid-template-columns:36px 1fr 70px;
+  align-items:center;
+  gap:8px;
+  padding:10px 0;
+  border-bottom:1px solid #00000010
+}
+.rankRow:last-child{border-bottom:0}
+.rank{
+  font-weight:800;
+  color:#b8860b
+}
+.rankName{font-weight:700}
+.rankScore{
+  text-align:right;
+  font-weight:800
+}
+
+.tabs{
+  display:flex;
+  gap:5px;
+  margin:12px 0
+}
+.tab{
+  flex:1;
+  padding:10px 5px;
+  border-radius:10px;
+  border:1px solid #ffffff30;
+  background:transparent;
+  color:#fff;
+  cursor:pointer;
+  font-weight:700
+}
+.tab.on{
+  background:var(--gold);
+  color:var(--ink);
+  border-color:var(--gold)
+}
+
+.qrbox{
+  background:#fff;
+  padding:16px;
+  width:220px;
+  margin:15px auto;
+  border-radius:12px;
+  display:flex;
+  justify-content:center
+}
+.qrbox canvas,.qrbox img{
+  max-width:190px
+}
+
+.shareCode{
+  font-size:30px;
+  font-weight:800;
+  letter-spacing:5px;
+  text-align:center;
+  color:var(--gold);
+  margin:8px 0
+}
+.shareText{
+  text-align:center;
+  font-size:15px;
+  font-weight:700;
+  margin:5px 0 14px
+}
+
+.challengeHeader{
+  text-align:center;
+  padding:10px 0
+}
+.challengeCode{
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:3px;
+  color:var(--gold)
+}
+.challengeMeta{
+  opacity:.75;
+  font-size:13px;
+  margin:5px 0
+}
+
+.resultTable{
+  background:var(--card);
+  color:var(--ink);
+  border-radius:16px;
+  padding:12px;
+  margin:12px 0
+}
+.resultRow{
+  display:grid;
+  grid-template-columns:1fr 55px 55px 60px;
+  gap:4px;
+  padding:8px 0;
+  border-bottom:1px solid #00000012;
+  font-size:13px
+}
+.resultRow:last-child{border-bottom:0}
+.resultRow.header{
+  font-weight:800;
+  opacity:.65;
+  font-size:11px;
+  text-transform:uppercase
+}
+.resultRow > div:not(:first-child){text-align:right}
+
+.uniqueBox{
+  background:#ffffff10;
+  border-radius:14px;
+  padding:12px;
+  margin:8px 0
+}
+.uniqueBox strong{
+  color:var(--gold)
+}
+
+.empty{
+  text-align:center;
+  opacity:.65;
+  padding:15px 5px
+}
+
+.notice{
+  background:#ffffff12;
+  border:1px solid #ffffff20;
+  border-radius:12px;
+  padding:12px;
+  font-size:14px;
+  margin:10px 0
+}
+
+.backTop{
+  background:none;
+  border:0;
+  color:#ffffffaa;
+  padding:5px 0 10px;
+  cursor:pointer
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div id="warn" class="warn"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="chain" viewBox="0 0 200 100">
+    <defs>
+      <clipPath id="c1"><rect x="55" y="0" width="40" height="50"/></clipPath>
+      <clipPath id="c2"><rect x="108" y="0" width="40" height="50"/></clipPath>
+    </defs>
+    <g fill="none" stroke-width="11">
+      <rect id="l1" x="8" y="28" width="78" height="44" rx="22" stroke="#e0b83a"/>
+      <rect id="l2" x="61" y="28" width="78" height="44" rx="22" stroke="#7fd1a6"/>
+      <rect id="l3" x="114" y="28" width="78" height="44" rx="22" stroke="#e0b83a"/>
+      <use href="#l1" clip-path="url(#c1)"/>
+      <use href="#l2" clip-path="url(#c2)"/>
+    </g>
+  </symbol>
+</svg>
+
+<!-- LOGIN -->
+<div id="login" class="scr on">
+  <svg class="logo" viewBox="0 0 200 100" aria-label="Word Chains logo">
+    <use href="#chain"/>
+  </svg>
+  <h1>Word Chains</h1>
+  <p class="sub">Link letters. Build words. Beat your friends.</p>
+  <p class="sub" id="lload">Loading...</p>
+
+  <div id="lbtns" style="display:none">
+    <button class="btn" id="dogoogle">Continue with Google</button>
+    <p class="sub" style="margin:6px 0">or use your email</p>
+
+    <input id="lemail" type="email" placeholder="Email" autocomplete="email" autocapitalize="off">
+    <input id="lpass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">
+
+    <div class="err" id="lerr"></div>
+
+    <div class="row">
+      <button class="btn" id="doemail" style="margin:4px 0">Log in</button>
+      <button class="btn sec" id="docreate" style="margin:4px 0">Create account</button>
+    </div>
+
+    <button class="link" id="doforgot">Forgot password?</button>
+
+    <hr style="border:0;border-top:1px solid #ffffff33;margin:10px 0">
+
+    <input id="lname" placeholder="Name (for guest play)" maxlength="20">
+    <button class="btn sec" id="doguest">Play as guest</button>
+
+    <p class="sub" style="font-size:12px">
+      Sign in to save your best score and use groups.
+      Guests can play normal games, but cannot join groups.
+    </p>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="uname" class="scr">
+  <h2>Set up your profile</h2>
+  <p class="sub">Pick a username other players will see.</p>
+  <input id="pname" placeholder="Your name" maxlength="20">
+  <input id="pun" placeholder="Username (letters, numbers, _)" maxlength="16" autocapitalize="off">
+  <div class="err" id="perr"></div>
+  <button class="btn" id="psave">Save and continue</button>
+
+  <div class="card" style="margin-top:18px;text-align:left">
+    <strong>📱 Make Word Chains feel like an app</strong>
+    <p class="sub" style="margin:7px 0 0;font-size:12px">
+      After you finish creating your account, tap the <b>3 dots ⋮</b> at the top of your browser, then choose <b>Add to Home screen</b>.
+      This puts Word Chains on your home screen so you can open it like an app — no app download is needed.
+    </p>
+  </div>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="scr">
+  <svg class="logo" style="width:60%;margin-top:4px" viewBox="0 0 200 100">
+    <use href="#chain"/>
+  </svg>
+
+  <h1>Word Chains</h1>
+  <p class="sub" id="hello"></p>
+
+  <div class="bestcard" id="bestcard">
+    <div class="lbl">Your best score</div>
+    <div class="bignum" id="bestnum">0</div>
+  </div>
+
+  <p class="sub" id="guesthint" style="display:none">
+    Sign in with Google or email to save your best score and join groups.
+  </p>
+
+  <button class="btn" id="mStart">Start game</button>
+  <button class="btn sec" id="mGroup">Groups</button>
+  <button class="btn sec" id="mCode">Enter code</button>
+  <button class="btn sec" id="mHow">How to play</button>
+  <button class="link" id="mOut">Log out</button>
+</div>
+
+<!-- INFO -->
+<div id="info" class="scr">
+  <h2 id="itit"></h2>
+  <div class="card" id="ibody"></div>
+  <button class="btn sec" data-back>Back</button>
+</div>
+
+<!-- ENTER CODE -->
+<div id="code" class="scr">
+  <h2>Enter code</h2>
+  <p class="sub">Type a board code or paste a link a friend sent you.</p>
+  <input id="cin" placeholder="e.g. k3j9xa" autocapitalize="off">
+  <div class="err" id="cerr"></div>
+  <button class="btn" id="cgo">Go</button>
+  <button class="btn sec" data-back>Back</button>
+</div>
+
+<!-- SETUP -->
+<div id="setup" class="scr">
+  <h2>Game setup</h2>
+
+  <div class="sectionTitle">Game length</div>
+  <div class="stepper">
+    <button id="tminus">&minus;</button>
+    <div id="tval"></div>
+    <button id="tplus">+</button>
+  </div>
+
+  <div class="sectionTitle">Minimum word length</div>
+  <div class="stepper">
+    <button id="mminus">&minus;</button>
+    <div id="mval"></div>
+    <button id="mplus">+</button>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div id="boardLabel" style="font-size:12px;opacity:.65;text-transform:uppercase;letter-spacing:1px">
+      Board code
+    </div>
+    <div class="shareCode" id="scode">...</div>
+    <div class="msg" id="binfo" style="color:#555"></div>
+  </div>
+
+  <button class="btn" id="go" disabled>Play</button>
+  <button class="btn sec" data-back>Back</button>
+</div>
+
+<!-- GROUPS -->
+<div id="groups" class="scr">
+  <h2>Groups</h2>
+  <p class="sub">Play shared boards with friends, family, or teammates.</p>
+
+  <button class="btn" id="createGroupBtn">Create a group</button>
+  <button class="btn sec" id="joinGroupBtn">Join a group</button>
+
+  <div class="sectionTitle">Your groups</div>
+  <div id="groupList"></div>
+
+  <button class="btn sec" data-menu>Back</button>
+</div>
+
+<!-- CREATE GROUP -->
+<div id="createGroup" class="scr">
+  <h2>Create a group</h2>
+  <p class="sub">Everyone in the group has the same permissions. There are no hosts or admins.</p>
+
+  <input id="groupNameInput" placeholder="Group name" maxlength="40">
+
+  <div class="err" id="groupCreateErr"></div>
+
+  <button class="btn" id="createGroupGo">Create group</button>
+  <button class="btn sec" id="createGroupBack">Back</button>
+</div>
+
+<!-- JOIN GROUP -->
+<div id="joinGroup" class="scr">
+  <h2>Join a group</h2>
+  <p class="sub">Enter the group code someone shared with you.</p>
+
+  <input id="groupCodeInput" placeholder="e.g. 7XK92P" maxlength="10" autocapitalize="characters">
+
+  <div class="err" id="groupJoinErr"></div>
+
+  <button class="btn" id="joinGroupGo">Join group</button>
+  <button class="btn sec" id="joinGroupBack">Back</button>
+</div>
+
+<!-- GROUP INVITE -->
+<div id="groupInvite" class="scr">
+  <h2>You're invited!</h2>
+  <div class="card" style="text-align:center">
+    <div style="font-size:13px;opacity:.65;text-transform:uppercase;letter-spacing:2px">
+      Group
+    </div>
+    <div style="font-size:28px;font-weight:800;margin:8px 0" id="inviteGroupName"></div>
+    <p class="sub" style="color:#555;margin-bottom:5px">
+      Join the group to play shared Word Chains challenges.
+    </p>
+  </div>
+
+  <div class="notice" id="inviteLoginNotice" style="display:none">
+    You need to log in or create an account before you can join this group.
+  </div>
+
+  <button class="btn" id="inviteJoinBtn">Join group</button>
+  <button class="btn sec" id="inviteLoginBtn" style="display:none">Log in / Create account</button>
+  <button class="btn sec" id="inviteBackBtn">Back</button>
+</div>
+
+<!-- GROUP PAGE -->
+<div id="groupPage" class="scr">
+  <button class="backTop" id="groupBack">← Groups</button>
+
+  <h2 id="groupTitle"></h2>
+  <p class="sub" id="groupMemberCount"></p>
+
+  <button class="btn" id="groupStartChallenge">Start group challenge</button>
+  <button class="btn sec" id="groupInviteBtn">Invite people</button>
+  <button class="btn sec" id="leaveGroupBtn">Leave group</button>
+
+  <div class="sectionTitle">Leaderboard</div>
+
+  <div class="tabs">
+    <button class="tab on" id="allTimeTab">All Time</button>
+    <button class="tab" id="weekTab">This Week</button>
+  </div>
+
+  <div class="card" id="leaderboard"></div>
+
+  <div class="sectionTitle">Members</div>
+  <div class="card" id="members"></div>
+
+  <div class="sectionTitle">Active challenges</div>
+  <div id="activeChallenges"></div>
+
+  <button class="sectionTitle completedToggle" id="completedChallengesToggle" type="button">
+    <span>Completed challenges</span>
+    <span id="completedChallengesChevron">▸</span>
+  </button>
+  <div id="completedChallenges" style="display:none"></div>
+</div>
+
+<!-- GROUP INVITE / QR -->
+<div id="groupShare" class="scr">
+  <button class="backTop" id="shareBack">← Group</button>
+  <h2>Invite people</h2>
+
+  <p class="shareText">Share this link with anyone you want to invite.</p>
+
+  <div class="card">
+    <div class="shareCode" id="groupShareCode"></div>
+    <div class="msg" style="color:#555">
+      Group code
+    </div>
+  </div>
+
+  <button class="btn" id="copyGroupLink">Copy invite link</button>
+  <button class="btn sec" id="shareGroupLink">Share invite</button>
+
+  <div class="qrbox">
+    <div id="groupQR"></div>
+  </div>
+
+  <p class="sub">
+    Anyone can open the invitation, but they must log in or create an account before joining.
+  </p>
+</div>
+
+<!-- START GROUP CHALLENGE -->
+<div id="groupChallengeSetup" class="scr">
+  <button class="backTop" id="challengeSetupBack">← Group</button>
+  <h2>Start group challenge</h2>
+
+  <p class="sub">
+    Everyone gets the same board, but each person can play at a different time.
+  </p>
+
+  <div class="sectionTitle">Game length</div>
+  <div class="stepper">
+    <button id="gtminus">&minus;</button>
+    <div id="gtval"></div>
+    <button id="gtplus">+</button>
+  </div>
+
+  <div class="sectionTitle">Minimum word length</div>
+  <div class="stepper">
+    <button id="gminminus">&minus;</button>
+    <div id="gmval"></div>
+    <button id="gminplus">+</button>
+  </div>
+
+  <div class="sectionTitle">Challenge availability</div>
+  <div class="stepper">
+    <button id="gdaysminus">&minus;</button>
+    <div id="gdaysval"></div>
+    <button id="gdaysplus">+</button>
+  </div>
+  <p class="sub" style="margin-top:-4px">Players can join and play until this window ends.</p>
+
+  <div class="card">
+    <strong>How this works</strong>
+    <p style="font-size:14px">
+      You will create one shared board. Every member gets one attempt.
+      The challenge stays available on the group page until it expires.
+    </p>
+    <p style="font-size:14px;margin-bottom:0">
+      A word found by only one player earns that player an extra point.
+    </p>
+  </div>
+
+  <button class="btn" id="createChallengeGo">Start challenge</button>
+  <button class="btn sec" id="challengeSetupCancel">Back</button>
+</div>
+
+<!-- CHALLENGE DETAILS -->
+<div id="challengeDetails" class="scr">
+  <button class="backTop" id="challengeDetailsBack">← Group</button>
+
+  <div class="challengeHeader">
+    <h2 id="challengeTitle"></h2>
+    <div class="challengeCode" id="challengeBoardCode"></div>
+    <div class="challengeMeta" id="challengeMeta"></div>
+  </div>
+
+  <div id="challengeStats"></div>
+
+  <button class="btn" id="playChallengeBtn">Play challenge</button>
+  <button class="btn sec" id="challengeResultsBtn">View results</button>
+  <button class="btn sec" id="endChallengeBtn" style="display:none">End challenge early</button>
+</div>
+
+<!-- CHALLENGE RESULTS -->
+<div id="challengeResults" class="scr">
+  <button class="backTop" id="resultsBack">← Group</button>
+
+  <h2 id="resultsTitle"></h2>
+  <p class="sub" id="resultsSubtitle"></p>
+
+  <div id="winnerCelebration"></div>
+
+  <div class="resultTable" id="resultsTable"></div>
+
+  <button class="btn sec" id="endChallengeFromResultsBtn" style="display:none">End challenge early</button>
+
+  <h3>Unique words</h3>
+  <p class="sub">
+    These words were found by only one player in this challenge.
+  </p>
+  <div id="uniqueWordsList"></div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="scr">
+  <div class="row">
+    <b id="score" style="font-size:20px">0 pts</b>
+    <b id="clock" style="font-size:24px"></b>
+    <button class="btn sec" id="pbtn" style="width:auto;margin:0;padding:8px 14px;font-size:15px">
+      Pause
+    </button>
+  </div>
+
+  <div id="msg"></div>
+  <div id="cur"></div>
+
+  <div id="boardwrap">
+    <div id="board"></div>
+
+    <div id="pause">
+      <h2>You have paused the game</h2>
+      <button class="btn" id="resume" style="width:200px">Resume</button>
+    </div>
+  </div>
+
+  <div id="found"></div>
+</div>
+
+<!-- END -->
+<div id="end" class="scr">
+  <h2>Time's up!</h2>
+
+  <div class="big" id="fscore"></div>
+  <p class="sub">points</p>
+
+  <p class="sub" id="groupBonus" style="color:var(--gold);font-weight:700;min-height:20px"></p>
+  <p class="sub" id="nbest" style="color:var(--gold);font-weight:700;min-height:20px"></p>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:13px;opacity:.7">Your longest word</div>
+    <div class="big" style="font-size:34px;color:#b8860b" id="longest"></div>
+  </div>
+
+  <div id="groupEndCard" style="display:none"></div>
+
+  <button class="btn" id="share">Share this board</button>
+
+  <h3>Your words</h3>
+  <div id="mine"></div>
+
+  <h3>Longest words on this board</h3>
+  <div id="top"></div>
+
+  <h3>Words you missed</h3>
+  <div id="missed"></div>
+
+  <button class="btn sec" id="again">Play again</button>
+  <button class="btn sec" id="home">Home</button>
+</div>
+
+</div>
+
+<script type="module">
+
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  getDocs,
+  deleteDoc,
+  setDoc,
+  addDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  serverTimestamp,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+const firebaseConfig={
+  apiKey:"AIzaSyDR69GKaHOAx3QxuZ4JFGM-fqUPtB7cxko",
+  authDomain:"wordchains-game.firebaseapp.com",
+  projectId:"wordchains-game",
+  storageBucket:"wordchains-game.firebasestorage.app",
+  messagingSenderId:"101289707534",
+  appId:"1:101289707534:web:23516dc6150a2c6ac6145f"
+};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const DICE=[
+  "AAEEGN","ELRTTY","AOOTTW","ABBJOO",
+  "EHRTVW","CIMOTU","DISTTY","EIOSST",
+  "DELRVY","ACHOPS","HIMNQU","EEINSU",
+  "EEGHNW","AFFKPS","HLNNRZ","DEILRX"
+];
+
+const STEPS=[30,60,90,120,150];
+const MIN_WORDS=120;
+const MIN_LONGEST=7;
+const MAX_TRIES=400;
+
+
+const $=id=>document.getElementById(id);
+
+const esc=s=>String(s??"").replace(/[<>&"]/g,"");
+
+const lab=s=>{
+  if(s<60)return s+" sec";
+  return s%60
+    ? Math.floor(s/60)+" min "+s%60+" sec"
+    : s/60+" min";
+};
+
+const fmt=s=>
+  Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+
+const show=id=>{
+  [
+    "login","uname","menu","info","code","setup","groups",
+    "createGroup","joinGroup","groupInvite","groupPage",
+    "groupShare","groupChallengeSetup","challengeDetails",
+    "challengeResults","game","end"
+  ].forEach(x=>{
+    $(x).classList.toggle("on",x===id);
+  });
+  scrollTo(0,0);
+};
+
+const chips=(a,best)=>{
+  return a.map(w=>
+    `<span class="chip${w===best?" best":""}">${esc(w)}</span>`
+  ).join("")||"<i>none</i>";
+};
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let user=null;
+let trie=null;
+
+let seed;
+let secs=60;
+let minWordLength=3;
+
+let locked=false;
+let board;
+
+let found=[];
+let score=0;
+let left;
+let timer;
+let playing=false;
+let paused=false;
+let path=[];
+let drag=false;
+let tk=0;
+
+let currentMode="normal";
+
+let currentGroupId=null;
+let currentGroup=null;
+
+let currentChallengeId=null;
+let currentChallenge=null;
+
+let pendingRoute=parseHashRoute(location.hash);
+
+
+/* =========================================================
+   ROUTING
+========================================================= */
+
+function parseHashRoute(hash){
+
+  const h=String(hash||"").replace(/^#/,"");
+
+  if(h.startsWith("group/")){
+    return {
+      type:"groupInvite",
+      code:h.slice(6).toUpperCase()
+    };
+  }
+
+  if(h.startsWith("challenge/")){
+    const p=h.split("/");
+    if(p.length>=3){
+      return {
+        type:"challenge",
+        groupId:p[1],
+        challengeId:p[2]
+      };
+    }
+  }
+
+  const normal=parseCode(h);
+
+  if(normal){
+    return {
+      type:"normal",
+      seed:normal.seed,
+      secs:normal.secs,
+      min:normal.min
+    };
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   BOARD
+========================================================= */
+
+function rng(s){
+  let h=2166136261;
+
+  for(const c of s){
+    h=Math.imul(h^c.charCodeAt(0),16777619);
+  }
+
+  let a=h>>>0;
+
+  return()=>{
+    a=a+1831565813|0;
+
+    let t=Math.imul(a^a>>>15,1|a);
+
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+
+function makeBoard(s){
+  const r=rng(s);
+  const d=DICE.slice();
+
+  for(let i=15;i>0;i--){
+    const j=Math.floor(r()*(i+1));
+    [d[i],d[j]]=[d[j],d[i]];
+  }
+
+  return d.map(x=>{
+    const f=x[Math.floor(r()*6)].toLowerCase();
+    return f==="q"?"qu":f;
+  });
+}
+
+const newSeed=()=>Math.random().toString(36).slice(2,8);
+
+function nb(i){
+  const r=i>>2;
+  const c=i&3;
+  const o=[];
+
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+
+      const R=r+dr;
+      const C=c+dc;
+
+      if(
+        (dr||dc)&&
+        R>=0&&
+        R<4&&
+        C>=0&&
+        C<4
+      ){
+        o.push(R*4+C);
+      }
+    }
+  }
+
+  return o;
+}
+
+function solve(b=board){
+
+  const res=new Set();
+
+  function go(i,node,used,str){
+
+    for(const ch of b[i]){
+      node=node[ch];
+      if(!node)return;
+    }
+
+    str+=b[i];
+
+    if(node.$&&str.length>=minWordLength){
+      res.add(str);
+    }
+
+    used|=1<<i;
+
+    for(const n of nb(i)){
+      if(!(used>>n&1)){
+        go(n,node,used,str);
+      }
+    }
+  }
+
+  if(!trie)return[];
+
+  for(let i=0;i<16;i++){
+    go(i,trie,0,"");
+  }
+
+  return[...res];
+}
+
+const pts=n=>n<3?0:n-2;
+
+const inDict=w=>{
+  if(!trie)return true;
+
+  let n=trie;
+
+  for(const c of w){
+    n=n[c];
+    if(!n)return false;
+  }
+
+  return !!n.$;
+};
+
+
+/* =========================================================
+   NORMAL GAME LINKS
+========================================================= */
+
+function parseCode(t){
+
+  const m=String(t||"")
+    .trim()
+    .replace(/^.*#/,"")
+    .toLowerCase()
+    .match(/^([a-z0-9]{4,12})(?:-(\d+))?(?:-(\d+))?$/);
+
+  if(!m)return null;
+
+  const d=+m[2];
+  const mw=+m[3];
+
+  return{
+    seed:m[1],
+    secs:STEPS.includes(d)?d:60,
+    min:mw>=2&&mw<=5?mw:3
+  };
+}
+
+function setBoard(s,d,mw){
+  seed=s;
+  secs=d;
+  minWordLength=mw;
+  board=makeBoard(s);
+
+  history.replaceState(
+    null,
+    "",
+    "#"+s+"-"+d+"-"+mw
+  );
+}
+
+const link=()=>{
+
+  if(currentMode==="group"&&currentGroupId&&currentChallengeId){
+
+    return location.href.split("#")[0]+
+      "#challenge/"+currentGroupId+"/"+currentChallengeId;
+
+  }
+
+  return location.href.split("#")[0]+
+    "#"+seed+"-"+secs+"-"+minWordLength;
+};
+
+
+/* =========================================================
+   DICTIONARY
+========================================================= */
+
+const dictP=
+  fetch("dictionary.txt")
+    .then(r=>{
+      if(!r.ok)throw 0;
+      return r.text();
+    })
+    .then(t=>{
+
+      const root={};
+
+      for(const w of t.split(/\s+/)){
+
+        const word=w.trim().toLowerCase();
+
+        if(word.length<2||word.length>16)continue;
+
+        let n=root;
+
+        for(const c of word){
+          n=n[c]||(n[c]={});
+        }
+
+        n.$=1;
+      }
+
+      trie=root;
+    })
+    .catch(()=>{
+
+      const w=$("warn");
+
+      w.textContent=
+        "Dictionary not found. Put dictionary.txt next to index.html.";
+
+      w.style.display="block";
+    });
+
+
+/* =========================================================
+   AUTH
+========================================================= */
+
+function afterAuth(){
+
+  if(pendingRoute){
+
+    const route=pendingRoute;
+    pendingRoute=null;
+
+    if(route.type==="groupInvite"){
+      openGroupInvite(route.code);
+      return;
+    }
+
+    if(route.type==="challenge"){
+      openChallengeById(route.groupId,route.challengeId);
+      return;
+    }
+
+    if(route.type==="normal"){
+      openSetup({
+        seed:route.seed,
+        secs:route.secs,
+        min:route.min
+      });
+      return;
+    }
+  }
+
+  menu();
+}
+
+function showLogin(){
+
+  $("lload").style.display="none";
+  $("lbtns").style.display="block";
+  show("login");
+}
+
+onAuthStateChanged(auth,async u=>{
+
+  if(!u){
+    user=null;
+
+    if(!pendingRoute){
+      showLogin();
+    }
+
+    return;
+  }
+
+  try{
+
+    const s=await getDoc(
+      doc(db,"users",u.uid)
+    );
+
+    if(s.exists()){
+
+      user={
+        uid:u.uid,
+        ...s.data()
+      };
+
+      afterAuth();
+
+    }else{
+
+      $("pname").value=u.displayName||"";
+      $("pun").value="";
+      $("perr").textContent="";
+      show("uname");
+    }
+
+  }catch(e){
+
+    showLogin();
+
+    $("lerr").textContent=
+      "Couldn't load your profile: "+e.message;
+  }
+});
+
+
+$("dogoogle").onclick=async()=>{
+
+  try{
+
+    $("lerr").textContent="";
+
+    await signInWithPopup(
+      auth,
+      new GoogleAuthProvider()
+    );
+
+  }catch(e){
+
+    if(e.code!=="auth/popup-closed-by-user"){
+      $("lerr").textContent=e.message;
+    }
+  }
+};
+
+const fbErr=e=>({
+
+  "auth/invalid-credential":
+    "Wrong email or password.",
+
+  "auth/invalid-email":
+    "That email doesn't look right.",
+
+  "auth/email-already-in-use":
+    "An account with that email already exists. Try logging in.",
+
+  "auth/weak-password":
+    "Password must be at least 6 characters.",
+
+  "auth/missing-password":
+    "Enter a password.",
+
+  "auth/too-many-requests":
+    "Too many attempts. Try again later.",
+
+  "auth/network-request-failed":
+    "Network problem. Check your connection."
+
+}[e.code]||e.message);
+
+const lmsg=(t,ok)=>{
+  $("lerr").textContent=t;
+  $("lerr").style.color=ok?"#9be7b5":"";
+};
+
+async function emailAuth(create){
+
+  const em=$("lemail").value.trim();
+  const pw=$("lpass").value;
+
+  if(!em||!pw){
+    return lmsg(
+      "Enter your email and password."
+    );
+  }
+
+  try{
+
+    lmsg("");
+
+    await(
+      create
+        ? createUserWithEmailAndPassword
+        : signInWithEmailAndPassword
+    )(auth,em,pw);
+
+  }catch(e){
+
+    lmsg(fbErr(e));
+  }
+}
+
+$("doemail").onclick=()=>emailAuth(false);
+$("docreate").onclick=()=>emailAuth(true);
+
+$("doforgot").onclick=async()=>{
+
+  const em=$("lemail").value.trim();
+
+  if(!em){
+    return lmsg(
+      "Type your email above first."
+    );
+  }
+
+  try{
+
+    await sendPasswordResetEmail(
+      auth,
+      em
+    );
+
+    lmsg(
+      "If that email has an account, a reset link is on its way. Check spam too.",
+      true
+    );
+
+  }catch(e){
+
+    lmsg(fbErr(e));
+  }
+};
+
+$("doguest").onclick=()=>{
+
+  user={
+    name:
+      esc($("lname").value.trim())||"Guest",
+    guest:true
+  };
+
+  menu();
+};
+
+
+$("psave").onclick=async()=>{
+
+  const name=esc(
+    $("pname").value.trim()
+  );
+
+  const un=$("pun").value
+    .trim()
+    .toLowerCase();
+
+  const u=auth.currentUser;
+
+  if(!name){
+    return $("perr").textContent=
+      "Please enter your name.";
+  }
+
+  if(!/^[a-z0-9_]{3,16}$/.test(un)){
+    return $("perr").textContent=
+      "Username: 3-16 letters, numbers or _";
+  }
+
+  try{
+
+    const batch=writeBatch(db);
+
+    batch.set(
+      doc(db,"usernames",un),
+      {uid:u.uid}
+    );
+
+    batch.set(
+      doc(db,"users",u.uid),
+      {
+        name,
+        username:un,
+        best:0
+      }
+    );
+
+    await batch.commit();
+
+    user={
+      uid:u.uid,
+      name,
+      username:un,
+      best:0
+    };
+
+    afterAuth();
+
+  }catch(e){
+
+    $("perr").textContent=e.message;
+  }
+};
+
+
+async function saveBest(){
+
+  $("nbest").textContent="";
+
+  if(
+    !user||
+    user.guest||
+    !user.uid||
+    score<=(user.best||0)
+  ){
+    return;
+  }
+
+  user.best=score;
+
+  $("nbest").textContent=
+    "New personal best!";
+
+  try{
+
+    await setDoc(
+      doc(db,"users",user.uid),
+      {best:score},
+      {merge:true}
+    );
+
+  }catch(e){
+
+    $("nbest").textContent=
+      "New best! (couldn't save it online)";
+  }
+}
+
+
+/* =========================================================
+   MENU
+========================================================= */
+
+function menu(){
+
+  currentMode="normal";
+  currentGroupId=null;
+  currentChallengeId=null;
+  currentGroup=null;
+  currentChallenge=null;
+
+  history.replaceState(
+    null,
+    "",
+    location.pathname+location.search
+  );
+
+  if(!user)return showLogin();
+
+  $("hello").textContent=
+    user.guest
+      ? `Hi ${user.name} (guest)`
+      : `Hi ${user.name} · @${user.username}`;
+
+  $("bestcard").style.display=
+    user.guest?"none":"block";
+
+  $("guesthint").style.display=
+    user.guest?"block":"none";
+
+  $("bestnum").textContent=
+    user.best||0;
+
+  show("menu");
+}
+
+
+function info(t,h){
+
+  $("itit").textContent=t;
+  $("ibody").innerHTML=h;
+  show("info");
+}
+
+
+document.querySelectorAll("[data-back]")
+  .forEach(b=>{
+    b.onclick=()=>{
+      tk++;
+      menu();
+    };
+  });
+
+document.querySelectorAll("[data-menu]")
+  .forEach(b=>{
+    b.onclick=menu;
+  });
+
+
+$("mStart").onclick=()=>openSetup();
+
+$("mGroup").onclick=()=>{
+
+  if(!user||user.guest){
+
+    info(
+      "Groups require an account",
+      `<p>You need to log in or create an account before you can create or join a group.</p>
+       <button class="btn" id="loginFromInfo">Log in</button>`
+    );
+
+    setTimeout(()=>{
+      const b=$("loginFromInfo");
+      if(b)b.onclick=()=>{
+        pendingRoute=null;
+        showLogin();
+      };
+    },0);
+
+    return;
+  }
+
+  openGroups();
+};
+
+
+$("mCode").onclick=()=>{
+
+  $("cin").value="";
+  $("cerr").textContent="";
+  show("code");
+};
+
+
+$("mHow").onclick=()=>info(
+  "How to play",
+  `<p>Swipe across <b>touching letters</b>. Diagonals count.</p>
+   <p>Words must meet the minimum word length selected before the game.</p>
+   <p>Each tile can be used once per word.</p>
+   <p>Scoring: a 3-letter word is 1 point and every extra letter adds 1 more.</p>
+   <p>In group challenges, a word found by only one player earns an extra point.</p>`
+);
+
+
+$("mOut").onclick=async()=>{
+
+  user=null;
+
+  if(!auth.currentUser){
+    showLogin();
+    return;
+  }
+
+  try{
+    await signOut(auth);
+  }catch(e){
+    showLogin();
+  }
+};
+
+
+$("cgo").onclick=()=>{
+
+  const c=parseCode($("cin").value);
+
+  if(!c){
+    return $("cerr").textContent=
+      "That doesn't look like a board code.";
+  }
+
+  openSetup(c);
+};
+
+
+/* =========================================================
+   NORMAL SETUP
+========================================================= */
+
+function updTime(){
+
+  $("tval").textContent=lab(secs);
+
+  const i=STEPS.indexOf(secs);
+
+  $("tminus").disabled=
+    locked||i<=0;
+
+  $("tplus").disabled=
+    locked||i>=STEPS.length-1;
+}
+
+
+function updMin(){
+
+  $("mval").textContent=
+    minWordLength+" letters";
+
+  $("mminus").disabled=
+    locked||minWordLength<=2;
+
+  $("mplus").disabled=
+    locked||minWordLength>=5;
+}
+
+
+function step(d){
+
+  const i=STEPS.indexOf(secs)+d;
+
+  if(i<0||i>=STEPS.length)return;
+
+  secs=STEPS[i];
+
+  if(seed){
+
+    history.replaceState(
+      null,
+      "",
+      "#"+seed+"-"+secs+"-"+minWordLength
+    );
+  }
+
+  updTime();
+}
+
+
+function stepMin(d){
+
+  const n=minWordLength+d;
+
+  if(n<2||n>5)return;
+
+  minWordLength=n;
+
+  if(seed){
+
+    history.replaceState(
+      null,
+      "",
+      "#"+seed+"-"+secs+"-"+minWordLength
+    );
+  }
+
+  updMin();
+}
+
+
+$("tminus").onclick=()=>step(-1);
+$("tplus").onclick=()=>step(1);
+$("mminus").onclick=()=>stepMin(-1);
+$("mplus").onclick=()=>stepMin(1);
+
+
+async function openSetup(sh){
+
+  const my=++tk;
+
+  locked=!!(sh&&sh.secs);
+
+  seed=null;
+
+  if(sh){
+
+    setBoard(
+      sh.seed,
+      sh.secs||60,
+      sh.min||3
+    );
+
+    $("scode").textContent=
+      sh.seed.toUpperCase();
+
+  }else{
+
+    secs=60;
+    minWordLength=3;
+
+    $("scode").textContent="...";
+  }
+
+  $("boardLabel").textContent=
+    sh?"Board code":"Board code";
+
+  $("binfo").textContent=
+    sh?"":"Finding a good board...";
+
+  $("go").disabled=true;
+
+  updTime();
+  updMin();
+
+  show("setup");
+
+  await dictP;
+
+  if(my!==tk)return;
+
+  if(!sh){
+
+    let bs=null;
+    let bn=-1;
+
+    for(let a=0;a<MAX_TRIES;a++){
+
+      if(my!==tk)return;
+
+      const s=newSeed();
+
+      if(!trie){
+
+        bs=s;
+        break;
+      }
+
+      const oldMin=minWordLength;
+
+      minWordLength=Math.max(
+        3,
+        Math.min(5,oldMin)
+      );
+
+      const w=solve(makeBoard(s));
+      const L=Math.max(
+        0,
+        ...w.map(x=>x.length)
+      );
+
+      minWordLength=oldMin;
+
+      if(
+        w.length>=MIN_WORDS&&
+        L>=MIN_LONGEST
+      ){
+        bs=s;
+        break;
+      }
+
+      if(w.length>bn){
+        bn=w.length;
+        bs=s;
+      }
+
+      if(a%10===9){
+        await new Promise(r=>
+          setTimeout(r,0)
+        );
+      }
+    }
+
+    if(my!==tk)return;
+
+    setBoard(
+      bs,
+      secs,
+      minWordLength
+    );
+
+    $("scode").textContent=
+      bs.toUpperCase();
+  }
+
+  if(trie){
+
+    const w=solve();
+    const L=Math.max(
+      0,
+      ...w.map(x=>x.length)
+    );
+
+    $("binfo").textContent=
+      `${w.length} words on this board · longest ${L} letters`;
+
+  }else{
+
+    $("binfo").textContent="";
+  }
+
+  $("go").disabled=false;
+}
+
+
+/* =========================================================
+   GROUPS
+========================================================= */
+
+function randomGroupCode(){
+
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let s="";
+
+  for(let i=0;i<6;i++){
+    s+=chars[
+      Math.floor(Math.random()*chars.length)
+    ];
+  }
+
+  return s;
+}
+
+
+function groupInviteLink(code){
+
+  return location.href.split("#")[0]+
+    "#group/"+code;
+}
+
+
+async function openGroups(){
+
+  if(!user||user.guest){
+    showLogin();
+    return;
+  }
+
+  show("groups");
+
+  $("groupList").innerHTML=
+    `<div class="empty">Loading groups...</div>`;
+
+  try{
+
+    /*
+      Keep the group list simple and compatible with Firestore rules.
+      We can read group documents while signed in, then check the
+      current user's membership document inside each group.
+
+      This avoids a collectionGroup("members") query, which can be
+      rejected by Firestore's collection-group rule/query analysis.
+    */
+    const groupsSnap=await getDocs(
+      query(
+        collection(db,"groups"),
+        limit(100)
+      )
+    );
+
+    const arr=[];
+
+    await Promise.all(
+      groupsSnap.docs.map(async groupDoc=>{
+
+        try{
+
+          const memberSnap=await getDoc(
+            doc(
+              db,
+              "groups",
+              groupDoc.id,
+              "members",
+              user.uid
+            )
+          );
+
+          if(!memberSnap.exists())return;
+
+          const g=groupDoc.data();
+          const m=memberSnap.data();
+
+          arr.push({
+            id:groupDoc.id,
+            groupName:g.name||"Unnamed group",
+            joinedAt:m.joinedAt
+          });
+
+        }catch(e){
+          // Ignore groups where the membership cannot be read.
+        }
+      })
+    );
+
+    arr.sort((a,b)=>
+      a.groupName.localeCompare(b.groupName)
+    );
+
+    if(!arr.length){
+
+      $("groupList").innerHTML=
+        `<div class="empty">
+          You aren't in any groups yet.
+        </div>`;
+
+      return;
+    }
+
+    $("groupList").innerHTML=
+      arr.map(g=>`
+        <div class="groupCard">
+          <h3>${esc(g.groupName)}</h3>
+          <div class="small">
+            Joined ${g.joinedAt?.toDate
+              ?g.joinedAt.toDate().toLocaleDateString()
+              :"recently"}
+          </div>
+          <button class="btn" onclick="window.openGroup('${esc(g.id)}')">
+            Open group
+          </button>
+        </div>
+      `).join("");
+
+  }catch(e){
+
+    $("groupList").innerHTML=
+      `<div class="notice">
+        Couldn't load your groups: ${esc(e.message)}
+      </div>`;
+  }
+}
+
+
+window.openGroup=async function(groupId){
+  await openGroup(groupId);
+};
+
+
+$("createGroupBtn").onclick=()=>{
+
+  $("groupNameInput").value="";
+  $("groupCreateErr").textContent="";
+  show("createGroup");
+};
+
+
+$("joinGroupBtn").onclick=()=>{
+
+  $("groupCodeInput").value="";
+  $("groupJoinErr").textContent="";
+  show("joinGroup");
+};
+
+
+$("createGroupBack").onclick=openGroups;
+$("joinGroupBack").onclick=openGroups;
+
+
+$("createGroupGo").onclick=async()=>{
+
+  if(!user||user.guest){
+    return showLogin();
+  }
+
+  const name=$("groupNameInput")
+    .value
+    .trim();
+
+  if(!name){
+    return $("groupCreateErr").textContent=
+      "Enter a group name.";
+  }
+
+  $("createGroupGo").disabled=true;
+
+  try{
+
+    let code=null;
+
+    // Invite codes now live directly on the group document.
+    // Check that the generated code isn't already in use.
+    for(let i=0;i<10;i++){
+
+      const c=randomGroupCode();
+
+      const q=query(
+        collection(db,"groups"),
+        where("inviteCode","==",c),
+        limit(1)
+      );
+
+      const existing=await getDocs(q);
+
+      if(existing.empty){
+        code=c;
+        break;
+      }
+    }
+
+    if(!code){
+      throw new Error(
+        "Couldn't generate a group code. Try again."
+      );
+    }
+
+    const groupRef=doc(
+      collection(db,"groups")
+    );
+
+    const batch=writeBatch(db);
+
+    // Create the group.
+    batch.set(
+      groupRef,
+      {
+        name,
+        inviteCode:code,
+        createdBy:user.uid,
+        createdAt:serverTimestamp()
+      }
+    );
+
+    // Add the creator as the first member.
+    batch.set(
+      doc(
+        db,
+        "groups",
+        groupRef.id,
+        "members",
+        user.uid
+      ),
+      {
+        uid:user.uid,
+        name:user.name,
+        joinedAt:serverTimestamp()
+      }
+    );
+
+    // No userGroups document and no invites document are needed.
+    await batch.commit();
+
+    await openGroup(groupRef.id);
+
+  }catch(e){
+
+    $("groupCreateErr").textContent=
+      e.message;
+
+  }finally{
+
+    $("createGroupGo").disabled=false;
+  }
+};
+
+
+$("joinGroupGo").onclick=async()=>{
+
+  if(!user||user.guest){
+    return showLogin();
+  }
+
+  const code=$("groupCodeInput")
+    .value
+    .trim()
+    .toUpperCase();
+
+  if(!/^[A-Z0-9]{6}$/.test(code)){
+
+    return $("groupJoinErr").textContent=
+      "Enter the 6-character group code.";
+  }
+
+  $("joinGroupGo").disabled=true;
+
+  try{
+
+    // Find the group directly by its inviteCode.
+    const q=query(
+      collection(db,"groups"),
+      where("inviteCode","==",code),
+      limit(1)
+    );
+
+    const snap=await getDocs(q);
+
+    if(snap.empty){
+
+      throw new Error(
+        "That group code doesn't exist."
+      );
+    }
+
+    const groupDoc=snap.docs[0];
+    const groupId=groupDoc.id;
+
+    const memberRef=doc(
+      db,
+      "groups",
+      groupId,
+      "members",
+      user.uid
+    );
+
+    const already=await getDoc(memberRef);
+
+    if(!already.exists()){
+
+      await setDoc(
+        memberRef,
+        {
+          uid:user.uid,
+          name:user.name,
+          joinedAt:serverTimestamp()
+        }
+      );
+    }
+
+    await openGroup(groupId);
+
+  }catch(e){
+
+    $("groupJoinErr").textContent=
+      e.message;
+
+  }finally{
+
+    $("joinGroupGo").disabled=false;
+  }
+};
+
+
+/* =========================================================
+   GROUP INVITATIONS
+========================================================= */
+
+async function openGroupInvite(code){
+
+  try{
+
+    code=String(code||"")
+      .trim()
+      .toUpperCase();
+
+    if(!/^[A-Z0-9]{6}$/.test(code)){
+
+      info(
+        "Invalid invitation",
+        `<p>This group invitation is not valid.</p>`
+      );
+
+      return;
+    }
+
+    // Invite codes are stored directly on groups now.
+    const q=query(
+      collection(db,"groups"),
+      where("inviteCode","==",code),
+      limit(1)
+    );
+
+    const snap=await getDocs(q);
+
+    if(snap.empty){
+
+      info(
+        "Invitation not found",
+        `<p>This group invitation is no longer valid.</p>`
+      );
+
+      return;
+    }
+
+    const groupDoc=snap.docs[0];
+    const groupId=groupDoc.id;
+    const d=groupDoc.data();
+
+    $("inviteGroupName").textContent=
+      d.name||"Group";
+
+    const loggedIn=!!user&&!user.guest;
+
+    $("inviteLoginNotice").style.display=
+      loggedIn?"none":"block";
+
+    $("inviteLoginBtn").style.display=
+      loggedIn?"none":"block";
+
+    $("inviteJoinBtn").style.display=
+      loggedIn?"block":"none";
+
+    $("inviteJoinBtn").onclick=async()=>{
+
+      if(!user||user.guest){
+        return showLogin();
+      }
+
+      try{
+
+        const memberRef=doc(
+          db,
+          "groups",
+          groupId,
+          "members",
+          user.uid
+        );
+
+        const existing=await getDoc(memberRef);
+
+        if(!existing.exists()){
+
+          await setDoc(
+            memberRef,
+            {
+              uid:user.uid,
+              name:user.name,
+              joinedAt:serverTimestamp()
+            }
+          );
+        }
+
+        await openGroup(groupId);
+
+      }catch(e){
+
+        $("inviteLoginNotice").style.display="block";
+
+        $("inviteLoginNotice").textContent=
+          "Couldn't join the group: "+e.message;
+      }
+    };
+
+    show("groupInvite");
+
+  }catch(e){
+
+    info(
+      "Invitation error",
+      `<p>${esc(e.message)}</p>`
+    );
+  }
+}
+
+
+$("inviteLoginBtn").onclick=()=>{
+
+  pendingRoute={
+    type:"groupInvite",
+    code:
+      parseHashRoute(location.hash)?.code
+  };
+
+  showLogin();
+};
+
+
+$("inviteBackBtn").onclick=menu;
+
+
+/* =========================================================
+   OPEN GROUP
+========================================================= */
+
+async function openGroup(groupId){
+
+  if(!user||user.guest){
+    showLogin();
+    return;
+  }
+
+  currentGroupId=groupId;
+
+  try{
+
+    const groupSnap=await getDoc(
+      doc(db,"groups",groupId)
+    );
+
+    if(!groupSnap.exists()){
+      throw new Error("That group no longer exists.");
+    }
+
+    currentGroup={
+      id:groupId,
+      ...groupSnap.data()
+    };
+
+    const memberCheck=await getDoc(
+      doc(
+        db,
+        "groups",
+        groupId,
+        "members",
+        user.uid
+      )
+    );
+
+    if(!memberCheck.exists()){
+
+      info(
+        "Not a group member",
+        `<p>You aren't a member of this group.</p>`
+      );
+
+      return;
+    }
+
+    await renderGroup();
+
+  }catch(e){
+
+    info(
+      "Group error",
+      `<p>${esc(e.message)}</p>`
+    );
+  }
+}
+
+
+async function renderGroup(){
+
+  show("groupPage");
+
+  $("groupTitle").textContent=
+    currentGroup.name;
+
+  $("leaderboard").innerHTML=
+    `<div class="empty">Loading...</div>`;
+
+  $("members").innerHTML=
+    `<div class="empty">Loading...</div>`;
+
+  $("activeChallenges").innerHTML=
+    `<div class="empty">Loading...</div>`;
+
+  $("completedChallenges").innerHTML=
+    `<div class="empty">Loading...</div>`;
+  $("completedChallenges").style.display="none";
+  $("completedChallengesChevron").textContent="▸";
+  $("completedChallengesToggle").onclick=()=>{
+    const el=$("completedChallenges");
+    const open=el.style.display!=="none";
+    el.style.display=open?"none":"block";
+    $("completedChallengesChevron").textContent=open?"▸":"▾";
+  };
+
+  try{
+
+    const membersSnap=await getDocs(
+      collection(
+        db,
+        "groups",
+        currentGroupId,
+        "members"
+      )
+    );
+
+    $("groupMemberCount").textContent=
+      `${membersSnap.size} member${membersSnap.size===1?"":"s"}`;
+
+    $("members").innerHTML=
+      membersSnap.docs.map(d=>{
+
+        const m=d.data();
+
+        return `
+          <div class="member">
+            <div>${esc(m.name)}</div>
+            <div style="opacity:.5;font-size:12px">
+              ${d.id===user.uid?"You":""}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  }catch(e){
+
+    $("members").innerHTML=
+      `<div class="notice">${esc(e.message)}</div>`;
+  }
+
+  await renderLeaderboard("all");
+  await renderChallenges("all");
+}
+
+
+$("groupBack").onclick=openGroups;
+
+
+$("leaveGroupBtn").onclick=async()=>{
+
+  if(!user||!currentGroupId)return;
+
+  const ok=confirm(
+    `Leave ${currentGroup?.name||"this group"}? You will no longer be able to play its challenges unless you rejoin.`
+  );
+
+  if(!ok)return;
+
+  $("leaveGroupBtn").disabled=true;
+
+  try{
+
+    await deleteDoc(
+      doc(
+        db,
+        "groups",
+        currentGroupId,
+        "members",
+        user.uid
+      )
+    );
+
+    currentGroupId=null;
+    currentGroup=null;
+    currentChallengeId=null;
+    currentChallenge=null;
+
+    await openGroups();
+
+  }catch(e){
+
+    alert("Couldn't leave group: "+e.message);
+    $("leaveGroupBtn").disabled=false;
+  }
+};
+
+
+$("allTimeTab").onclick=async()=>{
+
+  $("allTimeTab").classList.add("on");
+  $("weekTab").classList.remove("on");
+
+  await renderLeaderboard("all");
+  await renderChallenges("all");
+};
+
+
+$("weekTab").onclick=async()=>{
+
+  $("weekTab").classList.add("on");
+  $("allTimeTab").classList.remove("on");
+
+  await renderLeaderboard("week");
+  await renderChallenges("week");
+};
+
+
+/* =========================================================
+   LEADERBOARD
+========================================================= */
+
+function weekStart(){
+
+  const d=new Date();
+
+  const day=d.getDay();
+
+  const diff=
+    day===0
+      ?6
+      :day-1;
+
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-diff);
+
+  return d;
+}
+
+
+async function renderLeaderboard(mode){
+
+  try{
+
+    const challengeSnap=await getDocs(
+      collection(
+        db,
+        "groups",
+        currentGroupId,
+        "challenges"
+      )
+    );
+
+    const totals={};
+
+    for(const cdoc of challengeSnap.docs){
+
+      const c=cdoc.data();
+
+      if(mode==="week"){
+
+        const ts=
+          c.createdAt?.toDate
+            ?c.createdAt.toDate()
+            :null;
+
+        if(!ts||ts<weekStart())continue;
+      }
+
+      const playersSnap=await getDocs(
+        collection(
+          db,
+          "groups",
+          currentGroupId,
+          "challenges",
+          cdoc.id,
+          "players"
+        )
+      );
+
+      for(const pdoc of playersSnap.docs){
+
+        const p=pdoc.data();
+
+        if(!totals[p.uid]){
+
+          totals[p.uid]={
+            uid:p.uid,
+            name:p.name||"Player",
+            score:0
+          };
+        }
+
+        totals[p.uid].score+=
+          Number(p.totalScore||p.baseScore||0);
+      }
+    }
+
+    const rows=Object.values(totals)
+      .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+
+    if(!rows.length){
+
+      $("leaderboard").innerHTML=
+        `<div class="empty">
+          No group scores yet. Start the first challenge!
+        </div>`;
+
+      return;
+    }
+
+    $("leaderboard").innerHTML=
+      rows.map((r,i)=>`
+        <div class="rankRow">
+          <div class="rank">${i+1}</div>
+          <div class="rankName">${esc(r.name)}</div>
+          <div class="rankScore">${r.score}</div>
+        </div>
+      `).join("");
+
+  }catch(e){
+
+    $("leaderboard").innerHTML=
+      `<div class="notice">
+        Couldn't load leaderboard: ${esc(e.message)}
+      </div>`;
+  }
+}
+
+
+/* =========================================================
+   GROUP INVITE / QR
+========================================================= */
+
+$("groupInviteBtn").onclick=()=>{
+
+  const code=currentGroup.inviteCode;
+
+  $("groupShareCode").textContent=code;
+
+  $("groupQR").innerHTML="";
+
+  const url=groupInviteLink(code);
+
+  if(window.QRCode){
+
+    new QRCode(
+      $("groupQR"),
+      {
+        text:url,
+        width:190,
+        height:190
+      }
+    );
+  }else{
+
+    $("groupQR").textContent=
+      "QR code unavailable";
+  }
+
+  show("groupShare");
+};
+
+
+$("shareBack").onclick=()=>{
+  renderGroup();
+};
+
+
+$("copyGroupLink").onclick=async()=>{
+
+  const url=groupInviteLink(
+    currentGroup.inviteCode
+  );
+
+  try{
+
+    await navigator.clipboard.writeText(url);
+
+    $("copyGroupLink").textContent=
+      "Invite link copied!";
+
+    setTimeout(()=>{
+      $("copyGroupLink").textContent=
+        "Copy invite link";
+    },1800);
+
+  }catch(e){
+
+    prompt(
+      "Copy this invite link:",
+      url
+    );
+  }
+};
+
+
+$("shareGroupLink").onclick=async()=>{
+
+  const url=groupInviteLink(
+    currentGroup.inviteCode
+  );
+
+  const text=
+    `Join my Word Chains group: ${currentGroup.name}`;
+
+  if(navigator.share){
+
+    try{
+
+      await navigator.share({
+        title:"Word Chains group invitation",
+        text,
+        url
+      });
+
+    }catch(e){
+
+      if(e.name!=="AbortError"){}
+    }
+
+  }else{
+
+    try{
+
+      await navigator.clipboard.writeText(
+        text+" "+url
+      );
+
+      $("shareGroupLink").textContent=
+        "Invite copied!";
+
+      setTimeout(()=>{
+        $("shareGroupLink").textContent=
+          "Share invite";
+      },1800);
+
+    }catch(e){
+
+      prompt(
+        "Copy this invitation:",
+        text+" "+url
+      );
+    }
+  }
+};
+
+
+/* =========================================================
+   GROUP CHALLENGE SETUP
+========================================================= */
+
+let groupSecs=60;
+let groupMin=3;
+let groupDays=7;
+
+
+function updGroupTime(){
+
+  $("gtval").textContent=
+    lab(groupSecs);
+
+  const i=STEPS.indexOf(groupSecs);
+
+  $("gtminus").disabled=i<=0;
+  $("gtplus").disabled=i>=STEPS.length-1;
+}
+
+
+function updGroupMin(){
+
+  $("gmval").textContent=
+    groupMin+" letters";
+
+  $("gminminus").disabled=
+    groupMin<=2;
+
+  $("gminplus").disabled=
+    groupMin>=5;
+}
+
+
+function updGroupDays(){
+
+  $("gdaysval").textContent=
+    groupDays+" day"+(groupDays===1?"":"s");
+
+  $("gdaysminus").disabled=
+    groupDays<=1;
+
+  $("gdaysplus").disabled=
+    groupDays>=7;
+}
+
+
+$("groupStartChallenge").onclick=async()=>{
+
+  if(!user||user.guest){
+    return showLogin();
+  }
+
+  groupSecs=60;
+  groupMin=3;
+  groupDays=7;
+
+  updGroupTime();
+  updGroupMin();
+  updGroupDays();
+
+  show("groupChallengeSetup");
+};
+
+
+$("challengeSetupBack").onclick=renderGroup;
+$("challengeSetupCancel").onclick=renderGroup;
+
+
+$("gtminus").onclick=()=>{
+  const i=STEPS.indexOf(groupSecs)-1;
+  if(i>=0){
+    groupSecs=STEPS[i];
+    updGroupTime();
+  }
+};
+
+
+$("gtplus").onclick=()=>{
+  const i=STEPS.indexOf(groupSecs)+1;
+  if(i<STEPS.length){
+    groupSecs=STEPS[i];
+    updGroupTime();
+  }
+};
+
+
+$("gminminus").onclick=()=>{
+  groupMin=Math.max(2,groupMin-1);
+  updGroupMin();
+};
+
+
+$("gminplus").onclick=()=>{
+  groupMin=Math.min(5,groupMin+1);
+  updGroupMin();
+};
+
+
+$("gdaysminus").onclick=()=>{
+  groupDays=Math.max(1,groupDays-1);
+  updGroupDays();
+};
+
+
+$("gdaysplus").onclick=()=>{
+  groupDays=Math.min(7,groupDays+1);
+  updGroupDays();
+};
+
+
+$("createChallengeGo").onclick=async()=>{
+
+  $("createChallengeGo").disabled=true;
+
+  try{
+
+    await dictP;
+
+    let challengeSeed=null;
+
+    for(let i=0;i<MAX_TRIES;i++){
+
+      const s=newSeed();
+
+      if(!trie){
+        challengeSeed=s;
+        break;
+      }
+
+      const old=minWordLength;
+
+      minWordLength=groupMin;
+
+      const words=solve(
+        makeBoard(s)
+      );
+
+      minWordLength=old;
+
+      const longest=Math.max(
+        0,
+        ...words.map(w=>w.length)
+      );
+
+      if(
+        words.length>=MIN_WORDS&&
+        longest>=MIN_LONGEST
+      ){
+        challengeSeed=s;
+        break;
+      }
+
+      if(i===MAX_TRIES-1){
+        challengeSeed=s;
+      }
+    }
+
+    const expires=
+      new Date(
+        Date.now()+
+        groupDays*24*60*60*1000
+      );
+
+    const challengeRef=doc(
+      collection(
+        db,
+        "groups",
+        currentGroupId,
+        "challenges"
+      )
+    );
+
+    await setDoc(
+      challengeRef,
+      {
+        boardCode:challengeSeed,
+        seconds:groupSecs,
+        minimumWordLength:groupMin,
+        durationDays:groupDays,
+        startedBy:user.uid,
+        startedByName:user.name,
+        createdAt:serverTimestamp(),
+        expiresAt:expires,
+        status:"active"
+      }
+    );
+
+    currentChallengeId=
+      challengeRef.id;
+
+    currentChallenge={
+      id:challengeRef.id,
+      boardCode:challengeSeed,
+      seconds:groupSecs,
+      minimumWordLength:groupMin,
+      durationDays:groupDays,
+      startedBy:user.uid,
+      startedByName:user.name,
+      expiresAt:expires,
+      status:"active"
+    };
+
+    await showChallengeDetails();
+
+  }catch(e){
+
+    alert(
+      "Couldn't create challenge: "+e.message
+    );
+
+  }finally{
+
+    $("createChallengeGo").disabled=false;
+  }
+};
+
+
+/* =========================================================
+   CHALLENGES
+========================================================= */
+
+async function renderChallenges(mode="all"){
+
+  try{
+
+    const snap=await getDocs(
+      collection(
+        db,
+        "groups",
+        currentGroupId,
+        "challenges"
+      )
+    );
+
+    const active=[];
+    const completed=[];
+
+    for(const d of snap.docs){
+
+      const c={
+        id:d.id,
+        ...d.data()
+      };
+
+      const exp=
+        c.expiresAt?.toDate
+          ?c.expiresAt.toDate()
+          :new Date(c.expiresAt||0);
+
+      if(mode==="week"){
+        const created=c.createdAt?.toDate?c.createdAt.toDate():new Date(c.createdAt||0);
+        if(!created || created.getTime()<weekStart().getTime())continue;
+      }
+
+      const isActive=
+        c.status!=="ended" &&
+        exp.getTime()>Date.now();
+
+      let played=false;
+
+      try{
+        const playerSnap=await getDoc(
+          doc(
+            db,
+            "groups",
+            currentGroupId,
+            "challenges",
+            c.id,
+            "players",
+            user.uid
+          )
+        );
+        played=playerSnap.exists();
+      }catch(e){}
+
+      c._played=played;
+
+      if(isActive){
+        active.push(c);
+      }else{
+        try{
+          const playersSnap=await getDocs(collection(db,"groups",currentGroupId,"challenges",c.id,"players"));
+          const players=playersSnap.docs.map(d=>({id:d.id,...d.data()}));
+          const results=calculateGroupResults(players);
+          c._winner=results[0]||null;
+        }catch(e){c._winner=null;}
+        completed.push(c);
+      }
+    }
+
+    active.sort((a,b)=>
+      dateValue(b.createdAt)-
+      dateValue(a.createdAt)
+    );
+
+    completed.sort((a,b)=>
+      dateValue(b.createdAt)-
+      dateValue(a.createdAt)
+    );
+
+    $("activeChallenges").innerHTML=
+      active.length
+        ?active.map(c=>challengeCard(c,true)).join("")
+        :`<div class="empty">No active challenges.</div>`;
+
+    $("completedChallenges").innerHTML=
+      completed.length
+        ?completed.map(c=>challengeCard(c,false)).join("")
+        :`<div class="empty">No completed challenges yet.</div>`;
+
+  }catch(e){
+
+    $("activeChallenges").innerHTML=
+      `<div class="notice">${esc(e.message)}</div>`;
+
+    $("completedChallenges").innerHTML="";
+  }
+}
+
+function dateValue(x){
+
+  if(!x)return 0;
+
+  if(typeof x.toMillis==="function"){
+    return x.toMillis();
+  }
+
+  if(typeof x.toDate==="function"){
+    return x.toDate().getTime();
+  }
+
+  if(x instanceof Date){
+    return x.getTime();
+  }
+
+  return new Date(x).getTime()||0;
+}
+
+
+function challengeCard(c,active){
+
+  const exp=
+    c.expiresAt?.toDate
+      ?c.expiresAt.toDate()
+      :new Date(c.expiresAt||0);
+
+  const started=
+    c.createdAt?.toDate
+      ?c.createdAt.toDate()
+      :new Date(c.createdAt||Date.now());
+
+  const endedEarly=
+    c.status==="ended";
+
+  const action=
+    active && !c._played
+      ?`window.openChallenge('${esc(currentGroupId)}','${esc(c.id)}')`
+      :`window.viewChallengeResults('${esc(currentGroupId)}','${esc(c.id)}')`;
+
+  const label=
+    active && !c._played
+      ?"View / Play"
+      :"View results";
+
+  return `
+    <div class="groupCard">
+      <h3>
+        Challenge
+        <span style="opacity:.55">#${esc(c.id.slice(0,6).toUpperCase())}</span>
+      </h3>
+
+      <div class="small">
+        Started by ${esc(c.startedByName||"a group member")}
+        · ${started.toLocaleDateString()}
+      </div>
+
+      <div class="small">
+        ${c.seconds} seconds
+        · minimum ${c.minimumWordLength} letters
+      </div>
+
+      ${
+        active
+          ?`<div class="small" style="margin-top:5px;color:#9be7b5">
+              Available until ${exp.toLocaleDateString()}
+              ${c.durationDays?` · ${c.durationDays} day${c.durationDays===1?"":"s"}`:""}
+            </div>`
+          :`<div class="small" style="margin-top:5px;color:#ffd9a0">
+              ${c._winner
+                ?`🏆 Winner: <strong>${esc(c._winner.name)}</strong> · ${c._winner.totalScore} pts`
+                :"No winner yet — nobody has played."}
+            </div>`
+      }
+
+      ${c._played&&active
+        ?`<div class="small" style="margin-top:5px;opacity:.7">You already played this challenge.</div>`
+        :""}
+
+      <button
+        class="btn"
+        onclick="${action}">
+        ${label}
+      </button>
+    </div>
+  `;
+}
+
+
+window.openChallenge=async function(groupId,challengeId){
+
+  await openChallengeById(
+    groupId,
+    challengeId
+  );
+};
+
+
+window.viewChallengeResults=async function(groupId,challengeId){
+
+  await openChallengeById(
+    groupId,
+    challengeId
+  );
+
+  await showChallengeResults();
+};
+
+
+async function openChallengeById(
+  groupId,
+  challengeId
+){
+
+  if(!user||user.guest){
+
+    pendingRoute={
+      type:"challenge",
+      groupId,
+      challengeId
+    };
+
+    showLogin();
+    return;
+  }
+
+  try{
+
+    const member=await getDoc(
+      doc(
+        db,
+        "groups",
+        groupId,
+        "members",
+        user.uid
+      )
+    );
+
+    if(!member.exists()){
+
+      info(
+        "Join this group first",
+        `<p>You need to be a member of this group before you can play this challenge.</p>`
+      );
+
+      return;
+    }
+
+    const snap=await getDoc(
+      doc(
+        db,
+        "groups",
+        groupId,
+        "challenges",
+        challengeId
+      )
+    );
+
+    if(!snap.exists()){
+      throw new Error(
+        "That challenge no longer exists."
+      );
+    }
+
+    currentGroupId=groupId;
+
+    const groupSnap=await getDoc(
+      doc(db,"groups",groupId)
+    );
+
+    currentGroup={
+      id:groupId,
+      ...groupSnap.data()
+    };
+
+    currentChallengeId=challengeId;
+
+    currentChallenge={
+      id:challengeId,
+      ...snap.data()
+    };
+
+    await showChallengeDetails();
+
+  }catch(e){
+
+    info(
+      "Challenge error",
+      `<p>${esc(e.message)}</p>`
+    );
+  }
+}
+
+
+async function showChallengeDetails(){
+
+  const c=currentChallenge;
+
+  const expires=
+    c.expiresAt?.toDate
+      ?c.expiresAt.toDate()
+      :new Date(c.expiresAt||0);
+
+  $("challengeTitle").textContent=
+    currentGroup.name;
+
+  $("challengeBoardCode").textContent=
+    c.boardCode.toUpperCase();
+
+  $("challengeMeta").textContent=
+    `${c.seconds} seconds · minimum ${c.minimumWordLength} letters · started by ${c.startedByName}`;
+
+  const playerSnap=await getDoc(
+    doc(
+      db,
+      "groups",
+      currentGroupId,
+      "challenges",
+      currentChallengeId,
+      "players",
+      user.uid
+    )
+  );
+
+  const allPlayers=await getDocs(
+    collection(
+      db,
+      "groups",
+      currentGroupId,
+      "challenges",
+      currentChallengeId,
+      "players"
+    )
+  );
+
+  const played=playerSnap.exists();
+  const endedEarly=c.status==="ended";
+  const expired=expires.getTime()<=Date.now();
+  const closed=endedEarly||expired;
+
+  $("challengeStats").innerHTML=`
+    <div class="card" style="text-align:center">
+      <div style="font-size:25px;font-weight:800">
+        ${allPlayers.size}
+      </div>
+      <div style="font-size:12px;opacity:.65">
+        group member${allPlayers.size===1?" has":"s have"} played
+      </div>
+
+      <div style="font-size:12px;opacity:.65;margin-top:8px">
+        ${endedEarly
+          ?"Challenge ended early"
+          :`Challenge ends ${expires.toLocaleString()}`}
+      </div>
+    </div>
+  `;
+
+  $("playChallengeBtn").disabled=
+    played||closed;
+
+  $("playChallengeBtn").textContent=
+    played
+      ?"Already played"
+      :closed
+        ?"Challenge closed"
+        :"Play challenge";
+
+  $("playChallengeBtn").onclick=()=>{
+
+    if(!played&&!closed){
+      playGroupChallenge();
+    }
+  };
+
+  $("challengeResultsBtn").onclick=
+    showChallengeResults;
+
+  const canEnd=
+    !closed &&
+    !!user &&
+    !!currentGroupId;
+
+  $("endChallengeBtn").style.display=
+    canEnd?"block":"none";
+
+  $("endChallengeBtn").onclick=async()=>{
+
+    if(!canEnd)return;
+
+    const ok=confirm(
+      "End this challenge now? Players will no longer be able to play it."
+    );
+
+    if(!ok)return;
+
+    $("endChallengeBtn").disabled=true;
+
+    try{
+
+      await setDoc(
+        doc(
+          db,
+          "groups",
+          currentGroupId,
+          "challenges",
+          currentChallengeId
+        ),
+        {
+          status:"ended",
+          expiresAt:new Date(),
+          endedBy:user.uid,
+          endedAt:serverTimestamp()
+        },
+        {merge:true}
+      );
+
+      currentChallenge={
+        ...currentChallenge,
+        status:"ended",
+        expiresAt:new Date(),
+        endedBy:user.uid
+      };
+
+      await showChallengeDetails();
+
+    }catch(e){
+
+      alert("Couldn't end challenge: "+e.message);
+      $("endChallengeBtn").disabled=false;
+    }
+  };
+
+  show("challengeDetails");
+}
+
+
+$("challengeDetailsBack").onclick=renderGroup;
+
+
+async function playGroupChallenge(){
+
+  currentMode="group";
+
+  minWordLength=
+    currentChallenge.minimumWordLength;
+
+  secs=
+    currentChallenge.seconds;
+
+  seed=
+    currentChallenge.boardCode;
+
+  board=makeBoard(seed);
+
+  const playerRef=doc(
+    db,
+    "groups",
+    currentGroupId,
+    "challenges",
+    currentChallengeId,
+    "players",
+    user.uid
+  );
+
+  const existing=await getDoc(playerRef);
+
+  if(existing.exists()){
+
+    alert(
+      "You have already played this challenge."
+    );
+
+    return;
+  }
+
+  play();
+}
+
+
+/* =========================================================
+   SWIPE
+========================================================= */
+
+const bd=$("board");
+
+function tileAt(x,y){
+
+  const els=bd.children;
+
+  for(let i=0;i<16;i++){
+
+    const r=
+      els[i].getBoundingClientRect();
+
+    if(
+      Math.hypot(
+        x-(r.left+r.right)/2,
+        y-(r.top+r.bottom)/2
+      )<r.width*.38
+    ){
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+
+function move(e){
+
+  const i=
+    tileAt(
+      e.clientX,
+      e.clientY
+    );
+
+  if(i<0)return;
+
+  const last=
+    path[path.length-1];
+
+  if(i===last)return;
+
+  if(
+    path.length>1&&
+    i===path[path.length-2]
+  ){
+
+    path.pop();
+
+  }else if(
+    !path.includes(i)&&
+    (last===undefined||nb(last).includes(i))
+  ){
+
+    path.push(i);
+
+  }else{
+
+    return;
+  }
+
+  [...bd.children].forEach(
+    (el,k)=>
+      el.classList.toggle(
+        "on",
+        path.includes(k)
+      )
+  );
+
+  $("cur").textContent=
+    path.map(j=>board[j])
+      .join("")
+      .toUpperCase();
+}
+
+
+bd.addEventListener(
+  "pointerdown",
+  e=>{
+
+    if(!playing||paused)return;
+
+    drag=true;
+    path=[];
+
+    bd.setPointerCapture(
+      e.pointerId
+    );
+
+    move(e);
+  }
+);
+
+
+bd.addEventListener(
+  "pointermove",
+  e=>{
+    if(drag)move(e);
+  }
+);
+
+
+bd.addEventListener(
+  "pointerup",
+  ()=>{
+
+    if(drag){
+
+      drag=false;
+      submit();
+    }
+  }
+);
+
+
+bd.addEventListener(
+  "pointercancel",
+  ()=>{
+    drag=false;
+    clearPath();
+  }
+);
+
+
+function clearPath(){
+
+  path=[];
+  $("cur").textContent="";
+
+  [...bd.children]
+    .forEach(el=>
+      el.classList.remove("on")
+    );
+}
+
+
+/* =========================================================
+   GAME
+========================================================= */
+
+let mt;
+
+const msg=m=>{
+
+  $("msg").textContent=m;
+
+  clearTimeout(mt);
+
+  if(m){
+    mt=setTimeout(
+      ()=>$("msg").textContent="",
+      1600
+    );
+  }
+};
+
+
+function submit(){
+
+  const w=
+    path.map(j=>board[j]).join("");
+
+  const p=path.slice();
+
+  clearPath();
+
+  if(w.length<minWordLength){
+    return msg(
+      `Too short — ${minWordLength}+ letters`
+    );
+  }
+
+  if(found.includes(w)){
+    return msg("Already found");
+  }
+
+  if(!inDict(w)){
+    return msg("Not a word");
+  }
+
+  found.push(w);
+
+  score+=pts(w.length);
+
+  p.forEach(i=>
+    bd.children[i].classList.add("ok")
+  );
+
+  setTimeout(
+    ()=>p.forEach(i=>
+      bd.children[i].classList.remove("ok")
+    ),
+    450
+  );
+
+  msg(
+    `+${pts(w.length)} ${w.toUpperCase()}`
+  );
+
+  $("score").textContent=
+    score+" pts";
+
+  $("found").innerHTML=
+    chips(found);
+}
+
+
+function tick(){
+
+  left--;
+
+  $("clock").textContent=
+    fmt(left);
+
+  if(left<=0){
+    finish();
+  }
+}
+
+
+function play(){
+
+  found=[];
+  score=0;
+  left=secs;
+  paused=false;
+
+  $("pause").classList.remove("on");
+
+  $("score").textContent="0 pts";
+  $("found").innerHTML="";
+  $("clock").textContent=fmt(left);
+
+  msg(
+    `Swipe across touching letters · ${minWordLength}+ letters`
+  );
+
+  $("board").innerHTML=
+    board.map(t=>
+      `<div class="t">${t.toUpperCase()}</div>`
+    ).join("");
+
+  show("game");
+
+  playing=true;
+
+  clearInterval(timer);
+
+  timer=setInterval(
+    tick,
+    1000
+  );
+}
+
+
+function pause(){
+
+  if(!playing||paused)return;
+
+  paused=true;
+
+  clearInterval(timer);
+
+  clearPath();
+
+  drag=false;
+
+  $("pause").classList.add("on");
+}
+
+
+function resume(){
+
+  if(!paused)return;
+
+  paused=false;
+
+  $("pause").classList.remove("on");
+
+  timer=setInterval(
+    tick,
+    1000
+  );
+}
+
+
+$("go").onclick=play;
+$("pbtn").onclick=pause;
+$("resume").onclick=resume;
+
+document.addEventListener(
+  "visibilitychange",
+  ()=>{
+    if(document.hidden)pause();
+  }
+);
+
+
+/* =========================================================
+   FINISH GAME
+========================================================= */
+
+async function finish(){
+
+  clearInterval(timer);
+
+  playing=false;
+
+  clearPath();
+
+  show("end");
+
+  const byLen=a=>
+    a.slice().sort(
+      (a,b)=>
+        b.length-a.length||
+        a.localeCompare(b)
+    );
+
+  const mine=
+    byLen(found)[0]||"";
+
+  $("fscore").textContent=
+    score;
+
+  $("longest").textContent=
+    mine
+      ?mine.toUpperCase()
+      :"−";
+
+  $("mine").innerHTML=
+    chips(
+      byLen(found),
+      mine
+    );
+
+  $("nbest").textContent="";
+  $("groupBonus").textContent="";
+  $("groupEndCard").style.display="none";
+
+  if(currentMode==="group"){
+
+    await finishGroupChallenge();
+
+  }else{
+
+    await saveBest();
+
+    if(!trie){
+
+      $("top").textContent=
+        "Dictionary didn't load, so this isn't available.";
+
+      $("missed").textContent="";
+
+      return;
+    }
+
+    const all=byLen(solve());
+
+    const miss=
+      all.filter(
+        w=>!found.includes(w)
+      );
+
+    $("top").innerHTML=
+      all.slice(0,8)
+        .map(w=>
+          `<span class="chip${found.includes(w)?" best":""}">
+            ${esc(w)}
+          </span>`
+        ).join("")+
+        `<div class="msg" style="text-align:left">
+          Gold = you found it. ${all.length} words in total.
+        </div>`;
+
+    $("missed").innerHTML=
+      chips(
+        miss.slice(0,25)
+      );
+  }
+}
+
+
+/* =========================================================
+   GROUP RESULT
+========================================================= */
+
+async function finishGroupChallenge(){
+
+  const playerRef=doc(
+    db,
+    "groups",
+    currentGroupId,
+    "challenges",
+    currentChallengeId,
+    "players",
+    user.uid
+  );
+
+  const existing=await getDoc(playerRef);
+
+  if(existing.exists()){
+
+    $("groupBonus").textContent=
+      "You already submitted this challenge.";
+
+    return;
+  }
+
+  try{
+
+    /*
+      Base result is saved immediately.
+      Unique-word bonuses are calculated from all
+      submitted player word lists when results are viewed.
+    */
+
+    await setDoc(
+      playerRef,
+      {
+        uid:user.uid,
+        name:user.name,
+        words:found.slice(),
+        baseScore:score,
+        totalScore:score,
+        playedAt:serverTimestamp()
+      }
+    );
+
+    if(!user.guest && score>(user.best||0)){
+      user.best=score;
+      try{await setDoc(doc(db,"users",user.uid),{best:score},{merge:true});}catch(e){}
+    }
+
+    $("groupBonus").textContent=
+      "Your group score has been saved.";
+
+    $("groupEndCard").style.display="block";
+
+    $("groupEndCard").innerHTML=`
+      <div class="card">
+        <strong>Group challenge</strong>
+        <p style="font-size:14px">
+          Your unique-word bonus will be calculated
+          against the other players' submissions.
+        </p>
+        <button class="btn" id="viewGroupResultsNow">
+          View challenge results
+        </button>
+        <button class="btn sec" id="backToGroupNow">
+          Back to group
+        </button>
+      </div>
+    `;
+
+    $("viewGroupResultsNow").onclick=
+      showChallengeResults;
+
+    $("backToGroupNow").onclick=async()=>{
+      await renderGroup();
+    };
+
+  }catch(e){
+
+    $("groupBonus").textContent=
+      "Couldn't save your group result: "+e.message;
+  }
+}
+
+
+/* =========================================================
+   CHALLENGE RESULTS
+========================================================= */
+
+async function getChallengePlayers(){
+
+  const snap=await getDocs(
+    collection(
+      db,
+      "groups",
+      currentGroupId,
+      "challenges",
+      currentChallengeId,
+      "players"
+    )
+  );
+
+  return snap.docs.map(d=>({
+    id:d.id,
+    ...d.data()
+  }));
+}
+
+
+function calculateGroupResults(players){
+
+  const counts={};
+
+  for(const p of players){
+
+    for(const w of (p.words||[])){
+
+      counts[w]=
+        (counts[w]||0)+1;
+    }
+  }
+
+  const uniqueByPlayer={};
+
+  for(const p of players){
+
+    uniqueByPlayer[p.uid]=
+      (p.words||[])
+        .filter(w=>counts[w]===1);
+  }
+
+  return players.map(p=>{
+
+    const unique=
+      uniqueByPlayer[p.uid]||[];
+
+    const base=
+      Number(p.baseScore||0);
+
+    const bonus=
+      unique.length;
+
+    return{
+      ...p,
+      uniqueWords:unique,
+      uniqueBonus:bonus,
+      totalScore:base+bonus
+    };
+  }).sort(
+    (a,b)=>
+      b.totalScore-a.totalScore||
+      b.baseScore-a.baseScore||
+      a.name.localeCompare(b.name)
+  );
+}
+
+
+async function showChallengeResults(){
+
+  try{
+    const players=await getChallengePlayers();
+    const results=calculateGroupResults(players);
+
+    $("resultsTitle").textContent=currentGroup.name;
+    $("resultsSubtitle").textContent=`Challenge #${currentChallengeId.slice(0,6).toUpperCase()} · same board for everyone`;
+
+    const resultExpires=currentChallenge?.expiresAt?.toDate?currentChallenge.expiresAt.toDate():new Date(currentChallenge?.expiresAt||0);
+    const resultClosed=currentChallenge?.status==="ended" || resultExpires.getTime()<=Date.now();
+    const canEndFromResults=!!user && !!currentGroupId && !resultClosed;
+
+    $("endChallengeFromResultsBtn").style.display=canEndFromResults?"block":"none";
+    $("endChallengeFromResultsBtn").disabled=false;
+    $("endChallengeFromResultsBtn").onclick=async()=>{
+      if(!canEndFromResults)return;
+      if(!confirm("End this challenge now? Players will no longer be able to play it."))return;
+      const btn=$("endChallengeFromResultsBtn"); btn.disabled=true;
+      try{
+        await setDoc(doc(db,"groups",currentGroupId,"challenges",currentChallengeId),{status:"ended",expiresAt:new Date(),endedBy:user.uid,endedAt:serverTimestamp()},{merge:true});
+        currentChallenge={...currentChallenge,status:"ended",expiresAt:new Date(),endedBy:user.uid};
+        await showChallengeResults();
+      }catch(e){alert("Couldn't end challenge: "+e.message);btn.disabled=false;}
+    };
+
+    if(!results.length){
+      $("winnerCelebration").innerHTML="";
+      $("resultsTable").innerHTML=`<div class="empty">Nobody has played this challenge yet.</div>`;
+      $("uniqueWordsList").innerHTML="";
+      show("challengeResults");
+      return;
+    }
+
+    const winner=results[0];
+    const tiedWinners=results.filter(p=>p.totalScore===winner.totalScore);
+    const winnerNames=tiedWinners.map(p=>esc(p.name)).join(" & ");
+
+    $("winnerCelebration").innerHTML=resultClosed?`<div class="card winnerCelebration">
+      <div class="winnerTrophy">🏆 🎉</div>
+      <div class="winnerLabel">Challenge winner${tiedWinners.length>1?"s":""}</div>
+      <div class="winnerName">${winnerNames}</div>
+      <div style="margin-top:6px;font-weight:700">${winner.totalScore} point${winner.totalScore===1?"":"s"}</div>
+      ${tiedWinners.length>1?`<div class="small" style="margin-top:5px">It’s a tie!</div>`:`<div class="small" style="margin-top:5px">Congratulations!</div>`}
+    </div>`:"";
+
+    $("resultsTable").innerHTML=`<div class="resultRow header"><div>Player</div><div>Base</div><div>Unique</div><div>Total</div></div>${results.map((p,i)=>`<div class="resultRow"><div><strong>${i+1}. ${esc(p.name)}</strong></div><div>${p.baseScore||0}</div><div>+${p.uniqueBonus}</div><div><strong>${p.totalScore}</strong></div></div>`).join("")}`;
+
+    const uniquePlayers=results.filter(p=>p.uniqueWords.length);
+    $("uniqueWordsList").innerHTML=!uniquePlayers.length?`<div class="empty">No unique words yet.</div>`:uniquePlayers.map(p=>`<div class="uniqueBox"><strong>${esc(p.name)}</strong><div style="font-size:13px;margin-top:5px">+${p.uniqueBonus} bonus point${p.uniqueBonus===1?"":"s"}</div><div style="margin-top:5px">${p.uniqueWords.map(w=>`<span class="chip best">${esc(w)}</span>`).join("")}</div></div>`).join("");
+
+    if(!user?.guest){
+      const mine=results.find(p=>p.uid===user.uid);
+      if(mine && mine.totalScore>(user.best||0)){
+        user.best=mine.totalScore;
+        try{await setDoc(doc(db,"users",user.uid),{best:mine.totalScore},{merge:true});}catch(e){}
+      }
+    }
+    if($("bestnum"))$("bestnum").textContent=user?.best||0;
+
+    show("challengeResults");
+  }catch(e){
+    alert("Couldn't load challenge results: "+e.message);
+  }
+}
+$("resultsBack").onclick=async()=>{
+
+  await renderGroup();
+
+};
+
+
+/* =========================================================
+   SHARE NORMAL BOARD
+========================================================= */
+
+$("share").onclick=async()=>{
+
+  const url=link();
+
+  const text=
+    currentMode==="group"
+      ?`I just played a Word Chains group challenge!`
+      :`I scored ${score} on Word Chains! Play the same board:`;
+
+  if(navigator.share){
+
+    try{
+
+      await navigator.share({
+        title:"Word Chains",
+        text,
+        url
+      });
+
+      return;
+
+    }catch(e){
+
+      if(e.name==="AbortError")return;
+    }
+  }
+
+  try{
+
+    await navigator.clipboard.writeText(
+      text+" "+url
+    );
+
+    $("share").textContent=
+      "Link copied!";
+
+    setTimeout(()=>{
+      $("share").textContent=
+        "Share this board";
+    },1800);
+
+  }catch(e){
+
+    prompt(
+      "Copy this link:",
+      url
+    );
+  }
+};
+
+
+/* =========================================================
+   END NAVIGATION
+========================================================= */
+
+$("again").onclick=()=>{
+
+  if(currentMode==="group"){
+    showChallengeDetails();
+  }else{
+    openSetup();
+  }
+};
+
+
+$("home").onclick=menu;
+
+
+/* =========================================================
+   INITIAL ROUTE
+========================================================= */
+
+if(pendingRoute){
+
+  if(
+    pendingRoute.type==="groupInvite"
+  ){
+
+    /*
+      A group invitation can be viewed while logged out,
+      but joining requires authentication.
+    */
+
+    openGroupInvite(
+      pendingRoute.code
+    );
+
+  }else if(
+    pendingRoute.type==="challenge"
+  ){
+
+    /*
+      Challenge pages require group membership,
+      which requires authentication.
+    */
+
+    if(user){
+      openChallengeById(
+        pendingRoute.groupId,
+        pendingRoute.challengeId
+      );
+    }else{
+      showLogin();
+    }
+
+  }else if(
+    pendingRoute.type==="normal"
+  ){
+
+    openSetup({
+      seed:pendingRoute.seed,
+      secs:pendingRoute.secs,
+      min:pendingRoute.min
+    });
+  }
+}
+
+</script>
+</body>
+</html>
