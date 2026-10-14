@@ -25,7 +25,7 @@ body{
   font-family:system-ui,-apple-system,sans-serif;
   color:#fff;
 }
-.wrap{max-width:420px;margin:0 auto;padding:22px 18px}
+.wrap{max-width:420px;margin:0 auto;padding:56px 18px 22px}
 .scr{display:none}
 .scr.on{display:block}
 
@@ -427,6 +427,20 @@ h3{
   margin:10px 0
 }
 
+.homeTop{
+  position:fixed;
+  top:12px;
+  right:14px;
+  z-index:30;
+  background:#12332acc;
+  color:#fff;
+  border:1px solid #ffffff55;
+  border-radius:12px;
+  padding:8px 13px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer
+}
 .backTop{
   background:none;
   border:0;
@@ -439,6 +453,8 @@ h3{
 
 <body>
 <div class="wrap">
+
+<button class="homeTop" id="homeTop" style="display:none">&#127968; Home</button>
 
 <div id="warn" class="warn"></div>
 
@@ -643,6 +659,7 @@ h3{
   </div>
 
   <button class="btn" id="inviteJoinBtn">Join group</button>
+  <button class="btn sec" id="inviteShareBtn" style="display:none">Share invite link</button>
   <button class="btn sec" id="inviteLoginBtn" style="display:none">Log in / Create account</button>
   <button class="btn sec" id="inviteBackBtn">Back</button>
 </div>
@@ -667,8 +684,10 @@ h3{
 
   <div class="card" id="leaderboard"></div>
 
-  <div class="sectionTitle">Members</div>
-  <div class="card" id="members"></div>
+  <details id="membersBox">
+    <summary class="sectionTitle" style="cursor:pointer">Members</summary>
+    <div class="card" id="members"></div>
+  </details>
 
   <div class="sectionTitle">Active challenges</div>
   <div id="activeChallenges"></div>
@@ -789,6 +808,15 @@ h3{
   <div id="uniqueWordsList"></div>
 </div>
 
+<!-- ADD PLAYED GAME TO GROUP -->
+<div id="pickGroup" class="scr">
+  <h2>Add to a group</h2>
+  <p class="sub">Your score from this game counts as your play, and group members can play the same board.</p>
+  <div id="pickGroupList"></div>
+  <div class="err" id="pickGroupMsg"></div>
+  <button class="btn sec" id="pickGroupBack">Back</button>
+</div>
+
 <!-- GAME -->
 <div id="game" class="scr">
   <div class="row">
@@ -808,6 +836,7 @@ h3{
     <div id="pause">
       <h2>You have paused the game</h2>
       <button class="btn" id="resume" style="width:200px">Resume</button>
+      <button class="btn sec" id="endgame" style="width:200px">End game</button>
     </div>
   </div>
 
@@ -820,6 +849,7 @@ h3{
 
   <div class="big" id="fscore"></div>
   <p class="sub">points</p>
+  <p class="sub" id="fwords" style="font-weight:700;min-height:20px"></p>
 
   <p class="sub" id="groupBonus" style="color:var(--gold);font-weight:700;min-height:20px"></p>
   <p class="sub" id="nbest" style="color:var(--gold);font-weight:700;min-height:20px"></p>
@@ -831,7 +861,9 @@ h3{
 
   <div id="groupEndCard" style="display:none"></div>
 
-  <button class="btn" id="share">Share this board</button>
+  <button class="btn" id="again">Play again</button>
+  <button class="btn sec" id="home">Home</button>
+
 
   <h3>Your words</h3>
   <div id="mine"></div>
@@ -842,8 +874,9 @@ h3{
   <h3>Words you missed</h3>
   <div id="missed"></div>
 
-  <button class="btn sec" id="again">Play again</button>
-  <button class="btn sec" id="home">Home</button>
+  <button class="btn sec" id="share">Share this board</button>
+  <button class="btn sec" id="addToGroup" style="display:none">Add this game to a group</button>
+
 </div>
 
 </div>
@@ -935,10 +968,13 @@ const show=id=>{
     "login","uname","menu","info","code","setup","groups",
     "createGroup","joinGroup","groupInvite","groupPage",
     "groupShare","groupChallengeSetup","challengeDetails",
-    "challengeResults","game","end"
+    "challengeResults","pickGroup","game","end"
   ].forEach(x=>{
     $(x).classList.toggle("on",x===id);
   });
+  $("homeTop").style.display=
+    (["login","uname","menu"].includes(id)||(id==="game"&&currentMode==="group"))
+      ?"none":"block";
   scrollTo(0,0);
 };
 
@@ -969,6 +1005,8 @@ let left;
 let timer;
 let playing=false;
 let paused=false;
+let gameGuardActive=false;
+let gameGuardUrl="";
 let path=[];
 let drag=false;
 let tk=0;
@@ -1239,6 +1277,15 @@ const dictP=
 /* =========================================================
    AUTH
 ========================================================= */
+
+/* common words, used to make the "missed words" list friendlier */
+let commonWords=null;
+const COMMON_URL="https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-no-swears.txt";
+const commonP=fetch("common.txt")
+  .then(r=>{if(!r.ok)throw 0;return r.text()})
+  .catch(()=>fetch(COMMON_URL).then(r=>r.text()))
+  .then(t=>{const m=new Map();t.split(/\s+/).forEach((w,i)=>{w=w.trim().toLowerCase();if(w.length>=3&&!m.has(w))m.set(w,i)});commonWords=m})
+  .catch(()=>{});
 
 function afterAuth(){
 
@@ -1956,7 +2003,8 @@ async function openGroups(){
           arr.push({
             id:groupDoc.id,
             groupName:g.name||"Unnamed group",
-            joinedAt:m.joinedAt
+            joinedAt:m.joinedAt,
+            inviteCode:g.inviteCode
           });
 
         }catch(e){
@@ -1968,6 +2016,8 @@ async function openGroups(){
     arr.sort((a,b)=>
       a.groupName.localeCompare(b.groupName)
     );
+
+    window._gm=Object.fromEntries(arr.map(g=>[g.id,g]));
 
     if(!arr.length){
 
@@ -1991,6 +2041,7 @@ async function openGroups(){
           <button class="btn" onclick="window.openGroup('${esc(g.id)}')">
             Open group
           </button>
+          <button class="btn sec" onclick="window.shareGroup('${esc(g.id)}')">Share invite link</button>
         </div>
       `).join("");
 
@@ -2105,6 +2156,7 @@ $("createGroupGo").onclick=async()=>{
       {
         uid:user.uid,
         name:user.name,
+        username:user.username||"",
         joinedAt:serverTimestamp()
       }
     );
@@ -2183,6 +2235,7 @@ $("joinGroupGo").onclick=async()=>{
         {
           uid:user.uid,
           name:user.name,
+          username:user.username||"",
           joinedAt:serverTimestamp()
         }
       );
@@ -2252,6 +2305,16 @@ async function openGroupInvite(code){
 
     const loggedIn=!!user&&!user.guest;
 
+    let isMember=false;
+    if(loggedIn){
+      try{
+        isMember=(await getDoc(doc(db,"groups",groupId,"members",user.uid))).exists();
+      }catch(e){}
+    }
+    $("inviteJoinBtn").textContent=isMember?"Open group":"Join group";
+    $("inviteShareBtn").style.display=isMember?"block":"none";
+    $("inviteShareBtn").onclick=e=>shareInvite(d.name||"Group",code,e.currentTarget);
+
     $("inviteLoginNotice").style.display=
       loggedIn?"none":"block";
 
@@ -2286,6 +2349,7 @@ async function openGroupInvite(code){
             {
               uid:user.uid,
               name:user.name,
+              username:user.username||"",
               joinedAt:serverTimestamp()
             }
           );
@@ -2391,6 +2455,9 @@ async function openGroup(groupId){
 
 async function renderGroup(){
 
+  _gd=null;
+  getGroupData();   // start loading challenges right away, in parallel with the members
+
   show("groupPage");
 
   $("groupTitle").textContent=
@@ -2430,20 +2497,25 @@ async function renderGroup(){
     $("groupMemberCount").textContent=
       `${membersSnap.size} member${membersSnap.size===1?"":"s"}`;
 
-    $("members").innerHTML=
-      membersSnap.docs.map(d=>{
+    await resolveUsernames(
+      membersSnap.docs
+        .filter(d=>!d.data().username&&!(d.id===user.uid&&user.username))
+        .map(d=>d.id)
+    );
 
-        const m=d.data();
+    $("members").innerHTML =
+  membersSnap.docs.map(d => {
+    const m = d.data();
 
-        return `
-          <div class="member">
-            <div>${esc(m.name)}</div>
-            <div style="opacity:.5;font-size:12px">
-              ${d.id===user.uid?"You":""}
-            </div>
-          </div>
-        `;
-      }).join("");
+    return `
+      <div class="member">
+        <div>${esc(m.name || "Player")}</div>
+        <div style="opacity:.5;font-size:12px">
+          ${d.id === user.uid ? "You" : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
 
   }catch(e){
 
@@ -2451,8 +2523,7 @@ async function renderGroup(){
       `<div class="notice">${esc(e.message)}</div>`;
   }
 
-  await renderLeaderboard("all");
-  await renderChallenges("all");
+  await Promise.all([renderLeaderboard("all"),renderChallenges("all")]);
 }
 
 
@@ -2540,95 +2611,145 @@ function weekStart(){
 }
 
 
-async function renderLeaderboard(mode){
+/* Group data is fetched once, in parallel, and shared by the leaderboard and the challenge cards. */
+let _gd=null;
 
-  try{
+function getGroupData(){
+  const id=currentGroupId;
+  if(_gd&&_gd.id===id&&Date.now()-_gd.t<15000)return _gd.p;
+  const p=(async()=>{
+    const snap=await getDocs(collection(db,"groups",id,"challenges"));
+    return Promise.all(snap.docs.map(async d=>{
+      let players=[];
+      try{
+        const ps=await getDocs(collection(db,"groups",id,"challenges",d.id,"players"));
+        players=ps.docs.map(x=>({id:x.id,...x.data()}));
+      }catch(e){}
+      return{c:{id:d.id,...d.data()},players};
+    }));
+  })();
+  _gd={id,t:Date.now(),p};
+  return p;
+}
 
-    const challengeSnap=await getDocs(
-      collection(
-        db,
-        "groups",
-        currentGroupId,
-        "challenges"
-      )
-    );
+/* Usernames are stored on newer docs; older ones are looked up once and remembered. */
+const _un=new Map();
 
-    const totals={};
 
-    for(const cdoc of challengeSnap.docs){
+async function resolveUsernames(uids) {
+  await Promise.all(
+    [...new Set(uids)]
+      .filter(uid => uid && !_un.has(uid))
+      .map(async uid => {
+        try {
+          const snap = await getDoc(doc(db, "users", uid));
+          _un.set(
+            uid,
+            snap.exists() ? (snap.data().username || null) : null
+          );
+        } catch (e) {
+          console.error("Failed to load username for UID:", uid, e);
+          _un.set(uid, null);
+        }
+      })
+  );
+}
 
-      const c=cdoc.data();
+async function renderLeaderboard(mode) {
+  try {
+    const data = await getGroupData();
+    const totals = {};
 
-      if(mode==="week"){
+    for (const { c, players } of data) {
+      if (mode === "week") {
+        const ts = c.createdAt?.toDate
+          ? c.createdAt.toDate()
+          : null;
 
-        const ts=
-          c.createdAt?.toDate
-            ?c.createdAt.toDate()
-            :null;
-
-        if(!ts||ts<weekStart())continue;
+        if (!ts || ts < weekStart()) continue;
       }
 
-      const playersSnap=await getDocs(
-        collection(
-          db,
-          "groups",
-          currentGroupId,
-          "challenges",
-          cdoc.id,
-          "players"
-        )
-      );
+      for (const p of players) {
+        // Player documents use the Firebase UID as their document ID.
+        // Older documents may not have a separate "uid" field.
+        const uid = p.uid || p.id;
+        if (!uid) continue;
 
-      for(const pdoc of playersSnap.docs){
-
-        const p=pdoc.data();
-
-        if(!totals[p.uid]){
-
-          totals[p.uid]={
-            uid:p.uid,
-            name:p.name||"Player",
-            score:0
+        if (!totals[uid]) {
+          totals[uid] = {
+            uid,
+            name: p.name || "Player",
+            username: null,
+            score: 0
           };
         }
 
-        totals[p.uid].score+=
-          Number(p.totalScore||p.baseScore||0);
+        const t = totals[uid];
+
+        if (p.username) t.username = p.username;
+        if (p.name) t.name = p.name;
+
+        t.score += Number(p.totalScore ?? p.baseScore ?? 0);
       }
     }
 
-    const rows=Object.values(totals)
-      .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+    const rows = Object.values(totals);
 
-    if(!rows.length){
+    // Use the current user's profile username when available.
+    for (const r of rows) {
+      if (user && r.uid === user.uid && user.username) {
+        r.username = user.username;
+      }
+    }
 
-      $("leaderboard").innerHTML=
+    // Fetch usernames for player records that don't already have one.
+    await resolveUsernames(
+      rows.filter(r => !r.username).map(r => r.uid)
+    );
+
+    for (const r of rows) {
+      if (!r.username) {
+        r.username = _un.get(r.uid) || null;
+      }
+    }
+
+    rows.sort((a, b) =>
+      b.score - a.score ||
+      (a.username || a.name || "").localeCompare(
+        b.username || b.name || ""
+      ) ||
+      a.uid.localeCompare(b.uid)
+    );
+
+    if (!rows.length) {
+      $("leaderboard").innerHTML =
         `<div class="empty">
           No group scores yet. Start the first challenge!
         </div>`;
-
       return;
     }
 
-    $("leaderboard").innerHTML=
-      rows.map((r,i)=>`
-        <div class="rankRow">
-          <div class="rank">${i+1}</div>
-          <div class="rankName">${esc(r.name)}</div>
-          <div class="rankScore">${r.score}</div>
-        </div>
-      `).join("");
+    $("leaderboard").innerHTML = rows.map((r, i) => `
+      <div class="rankRow">
+        <div class="rank">${i + 1}</div>
+        <div class="rankName">${esc(
+          r.username
+            ? "@" + r.username
+            : r.name || "Username unavailable"
+        )}</div>
+        <div class="rankScore">${r.score}</div>
+      </div>
+    `).join("");
 
-  }catch(e){
+  } catch (e) {
+    console.error("Leaderboard error:", e);
 
-    $("leaderboard").innerHTML=
+    $("leaderboard").innerHTML =
       `<div class="notice">
         Couldn't load leaderboard: ${esc(e.message)}
       </div>`;
   }
 }
-
 
 /* =========================================================
    GROUP INVITE / QR
@@ -2974,80 +3095,32 @@ async function renderChallenges(mode="all"){
 
   try{
 
-    const snap=await getDocs(
-      collection(
-        db,
-        "groups",
-        currentGroupId,
-        "challenges"
-      )
-    );
+    const data=await getGroupData();
 
     const active=[];
     const completed=[];
 
-    for(const d of snap.docs){
+    for(const {c,players} of data){
 
-      const c={
-        id:d.id,
-        ...d.data()
-      };
-
-      const exp=
-        c.expiresAt?.toDate
-          ?c.expiresAt.toDate()
-          :new Date(c.expiresAt||0);
+      const exp=c.expiresAt?.toDate?c.expiresAt.toDate():new Date(c.expiresAt||0);
 
       if(mode==="week"){
         const created=c.createdAt?.toDate?c.createdAt.toDate():new Date(c.createdAt||0);
-        if(!created || created.getTime()<weekStart().getTime())continue;
+        if(!created||created.getTime()<weekStart().getTime())continue;
       }
 
-      const isActive=
-        c.status!=="ended" &&
-        exp.getTime()>Date.now();
+      c._played=players.some(p=>p.uid===user.uid);
 
-      let played=false;
-
-      try{
-        const playerSnap=await getDoc(
-          doc(
-            db,
-            "groups",
-            currentGroupId,
-            "challenges",
-            c.id,
-            "players",
-            user.uid
-          )
-        );
-        played=playerSnap.exists();
-      }catch(e){}
-
-      c._played=played;
-
-      if(isActive){
+      if(c.status!=="ended"&&exp.getTime()>Date.now()){
         active.push(c);
       }else{
-        try{
-          const playersSnap=await getDocs(collection(db,"groups",currentGroupId,"challenges",c.id,"players"));
-          const players=playersSnap.docs.map(d=>({id:d.id,...d.data()}));
-          const results=calculateGroupResults(players);
-          c._winner=results[0]||null;
-        }catch(e){c._winner=null;}
+        c._winner=calculateGroupResults(players)[0]||null;
         completed.push(c);
       }
     }
 
-    active.sort((a,b)=>
-      dateValue(b.createdAt)-
-      dateValue(a.createdAt)
-    );
-
-    completed.sort((a,b)=>
-      dateValue(b.createdAt)-
-      dateValue(a.createdAt)
-    );
+    active.sort((a,b)=>dateValue(b.createdAt)-dateValue(a.createdAt));
+    completed.sort((a,b)=>dateValue(b.createdAt)-dateValue(a.createdAt));
 
     $("activeChallenges").innerHTML=
       active.length
@@ -3061,9 +3134,7 @@ async function renderChallenges(mode="all"){
 
   }catch(e){
 
-    $("activeChallenges").innerHTML=
-      `<div class="notice">${esc(e.message)}</div>`;
-
+    $("activeChallenges").innerHTML=`<div class="notice">${esc(e.message)}</div>`;
     $("completedChallenges").innerHTML="";
   }
 }
@@ -3196,15 +3267,13 @@ async function openChallengeById(
 
   try{
 
-    const member=await getDoc(
-      doc(
-        db,
-        "groups",
-        groupId,
-        "members",
-        user.uid
-      )
-    );
+    // These reads are independent, so fetch them together instead of waiting
+    // for membership and challenge reads one after another.
+    const [member, snap, groupSnap] = await Promise.all([
+      getDoc(doc(db,"groups",groupId,"members",user.uid)),
+      getDoc(doc(db,"groups",groupId,"challenges",challengeId)),
+      getDoc(doc(db,"groups",groupId))
+    ]);
 
     if(!member.exists()){
 
@@ -3216,27 +3285,17 @@ async function openChallengeById(
       return;
     }
 
-    const snap=await getDoc(
-      doc(
-        db,
-        "groups",
-        groupId,
-        "challenges",
-        challengeId
-      )
-    );
-
     if(!snap.exists()){
       throw new Error(
         "That challenge no longer exists."
       );
     }
 
-    currentGroupId=groupId;
+    if(!groupSnap.exists()){
+      throw new Error("That group no longer exists.");
+    }
 
-    const groupSnap=await getDoc(
-      doc(db,"groups",groupId)
-    );
+    currentGroupId=groupId;
 
     currentGroup={
       id:groupId,
@@ -3592,17 +3651,17 @@ function clearPath(){
 let mt;
 
 const msg=m=>{
-
   $("msg").textContent=m;
-
   clearTimeout(mt);
-
   if(m){
-    mt=setTimeout(
-      ()=>$("msg").textContent="",
-      1600
-    );
+    mt=setTimeout(()=>$("msg").textContent="",1600);
   }
+};
+
+/* Flash accepted words only, as in the original version */
+const flash=p=>{
+  p.forEach(i=>bd.children[i]&&bd.children[i].classList.add("ok"));
+  setTimeout(()=>p.forEach(i=>bd.children[i]&&bd.children[i].classList.remove("ok")),450);
 };
 
 
@@ -3616,9 +3675,7 @@ function submit(){
   clearPath();
 
   if(w.length<minWordLength){
-    return msg(
-      `Too short — ${minWordLength}+ letters`
-    );
+    return msg(`Too short — ${minWordLength}+ letters`);
   }
 
   if(found.includes(w)){
@@ -3633,20 +3690,9 @@ function submit(){
 
   score+=pts(w.length);
 
-  p.forEach(i=>
-    bd.children[i].classList.add("ok")
-  );
+  flash(p);
 
-  setTimeout(
-    ()=>p.forEach(i=>
-      bd.children[i].classList.remove("ok")
-    ),
-    450
-  );
-
-  msg(
-    `+${pts(w.length)} ${w.toUpperCase()}`
-  );
+  msg(`+${pts(w.length)} ${w.toUpperCase()}`);
 
   $("score").textContent=
     score+" pts";
@@ -3671,7 +3717,7 @@ function tick(){
 
 function play(){
 
-  found=[];
+  addedGroups={};found=[];
   score=0;
   left=secs;
   paused=false;
@@ -3694,6 +3740,12 @@ function play(){
   show("game");
 
   playing=true;
+
+  // Add a history entry so the first Back action can be confirmed.
+  // Keep the game URL intact if the player chooses to stay.
+  gameGuardUrl=location.href;
+  history.pushState({wordChainsGameGuard:true}, "", gameGuardUrl);
+  gameGuardActive=true;
 
   clearInterval(timer);
 
@@ -3735,6 +3787,16 @@ function resume(){
 }
 
 
+$("endgame").onclick=()=>{
+  const msgText=currentMode==="group"
+    ?"End the game now? This counts as your one attempt at this challenge."
+    :"End the game now and see your results?";
+  if(!confirm(msgText))return;
+  paused=false;
+  $("pause").classList.remove("on");
+  finish();
+};
+
 $("go").onclick=play;
 $("pbtn").onclick=pause;
 $("resume").onclick=resume;
@@ -3747,6 +3809,30 @@ document.addEventListener(
 );
 
 
+// Protect active games from accidental browser Back navigation and reloads.
+window.addEventListener("popstate", ()=>{
+  if(!gameGuardActive || !playing) return;
+
+  const leave = confirm("Leave this game? Your game is still in progress. Choose Cancel to stay in the game.");
+  if(!leave){
+    history.pushState({wordChainsGameGuard:true}, "", gameGuardUrl);
+    return;
+  }
+
+  // Allow navigation without treating it as a completed game.
+  gameGuardActive=false;
+  playing=false;
+  paused=false;
+  clearInterval(timer);
+});
+
+window.addEventListener("beforeunload", event=>{
+  if(!playing) return;
+  event.preventDefault();
+  event.returnValue="";
+});
+
+
 /* =========================================================
    FINISH GAME
 ========================================================= */
@@ -3756,6 +3842,7 @@ async function finish(){
   clearInterval(timer);
 
   playing=false;
+  gameGuardActive=false;
 
   clearPath();
 
@@ -3788,6 +3875,9 @@ async function finish(){
   $("nbest").textContent="";
   $("groupBonus").textContent="";
   $("groupEndCard").style.display="none";
+  const totalWords=trie?solve().length:0;
+  $("fwords").textContent=found.length+" word"+(found.length===1?"":"s")+" found"+(totalWords?" out of "+totalWords:"");
+  $("addToGroup").style.display=(currentMode==="normal"&&user&&!user.guest)?"block":"none";
 
   if(currentMode==="group"){
 
@@ -3825,10 +3915,15 @@ async function finish(){
           Gold = you found it. ${all.length} words in total.
         </div>`;
 
+    await commonP;
+
+    const cm=commonWords
+      ?miss.filter(w=>commonWords.has(w)).sort((a,b)=>b.length-a.length||commonWords.get(a)-commonWords.get(b))
+      :[];
+
     $("missed").innerHTML=
-      chips(
-        miss.slice(0,25)
-      );
+      chips((cm.length?cm:miss).slice(0,30))+
+      (cm.length?`<div class="msg" style="text-align:left">Common words you missed.</div>`:"");
   }
 }
 
@@ -3872,6 +3967,7 @@ async function finishGroupChallenge(){
       {
         uid:user.uid,
         name:user.name,
+        username:user.username||"",
         words:found.slice(),
         baseScore:score,
         totalScore:score,
@@ -4043,13 +4139,6 @@ async function showChallengeResults(){
     const uniquePlayers=results.filter(p=>p.uniqueWords.length);
     $("uniqueWordsList").innerHTML=!uniquePlayers.length?`<div class="empty">No unique words yet.</div>`:uniquePlayers.map(p=>`<div class="uniqueBox"><strong>${esc(p.name)}</strong><div style="font-size:13px;margin-top:5px">+${p.uniqueBonus} bonus point${p.uniqueBonus===1?"":"s"}</div><div style="margin-top:5px">${p.uniqueWords.map(w=>`<span class="chip best">${esc(w)}</span>`).join("")}</div></div>`).join("");
 
-    if(!user?.guest){
-      const mine=results.find(p=>p.uid===user.uid);
-      if(mine && mine.totalScore>(user.best||0)){
-        user.best=mine.totalScore;
-        try{await setDoc(doc(db,"users",user.uid),{best:mine.totalScore},{merge:true});}catch(e){}
-      }
-    }
     if($("bestnum"))$("bestnum").textContent=user?.best||0;
 
     show("challengeResults");
@@ -4132,6 +4221,118 @@ $("again").onclick=()=>{
   }
 };
 
+
+/* =========================================================
+   ADD A PLAYED GAME TO A GROUP
+========================================================= */
+
+let addedGroups={};
+
+async function myGroups(){
+  const snap=await getDocs(query(collection(db,"groups"),limit(100)));
+  const arr=[];
+  await Promise.all(snap.docs.map(async g=>{
+    try{
+      const m=await getDoc(doc(db,"groups",g.id,"members",user.uid));
+      if(m.exists())arr.push({id:g.id,name:g.data().name||"Unnamed group"});
+    }catch(e){}
+  }));
+  return arr.sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+$("addToGroup").onclick=async()=>{
+  if(!user||user.guest)return;
+  $("pickGroupMsg").textContent="";
+  $("pickGroupList").innerHTML=`<div class="empty">Loading groups...</div>`;
+  show("pickGroup");
+  try{
+    const gs=await myGroups();
+    $("pickGroupList").innerHTML=gs.length
+      ?gs.map(g=>`<div class="groupCard"><h3>${esc(g.name)}</h3>
+          <button class="btn" data-gid="${esc(g.id)}" ${addedGroups[g.id]?"disabled":""}>${addedGroups[g.id]?"Added":"Add to this group"}</button></div>`).join("")
+      :`<div class="empty">You aren't in any groups yet.</div>`;
+    $("pickGroupList").querySelectorAll("[data-gid]").forEach(b=>{
+      b.onclick=()=>addGameToGroup(b.dataset.gid,gs.find(x=>x.id===b.dataset.gid),b);
+    });
+  }catch(e){
+    $("pickGroupList").innerHTML=`<div class="notice">Couldn't load your groups: ${esc(e.message)}</div>`;
+  }
+};
+
+async function addGameToGroup(gid,g,btn){
+  btn.disabled=true;
+  $("pickGroupMsg").style.color="";
+  $("pickGroupMsg").textContent="";
+  try{
+    const days=7;
+    const cref=doc(collection(db,"groups",gid,"challenges"));
+    await setDoc(cref,{
+      boardCode:seed,
+      seconds:secs,
+      minimumWordLength:minWordLength,
+      durationDays:days,
+      startedBy:user.uid,
+      startedByName:user.name,
+      createdAt:serverTimestamp(),
+      expiresAt:new Date(Date.now()+days*86400000),
+      status:"active"
+    });
+    await setDoc(doc(db,"groups",gid,"challenges",cref.id,"players",user.uid),{
+      uid:user.uid,
+      name:user.name,
+      username:user.username||"",
+      words:found.slice(),
+      baseScore:score,
+      totalScore:score,
+      playedAt:serverTimestamp()
+    });
+    addedGroups[gid]=true;
+    btn.textContent="Added";
+    $("pickGroupMsg").style.color="#9be7b5";
+    $("pickGroupMsg").textContent=`Added to ${g.name}! Your ${score} points count as your play. Others have ${days} days to play this board.`;
+  }catch(e){
+    btn.disabled=false;
+    $("pickGroupMsg").textContent="Couldn't add it: "+e.message;
+  }
+}
+
+$("pickGroupBack").onclick=()=>show("end");
+
+
+/* =========================================================
+   SHARE A GROUP INVITE (works for people already in the group)
+========================================================= */
+
+async function shareInvite(name,code,btn){
+  const url=groupInviteLink(code);
+  const text=`Join my Word Chains group: ${name}`;
+  if(navigator.share){
+    try{await navigator.share({title:"Word Chains group invitation",text,url});return}
+    catch(e){if(e.name==="AbortError")return}
+  }
+  try{
+    await navigator.clipboard.writeText(text+" "+url);
+    if(btn){const o=btn.textContent;btn.textContent="Invite copied!";setTimeout(()=>btn.textContent=o,1800)}
+  }catch(e){
+    prompt("Copy this invitation:",text+" "+url);
+  }
+}
+
+window.shareGroup=id=>{
+  const g=(window._gm||{})[id];
+  if(g&&g.inviteCode)shareInvite(g.groupName,g.inviteCode,window.event&&window.event.target);
+};
+
+$("homeTop").onclick=()=>{
+  if(playing){
+    if(!confirm("Leave this game? Your score won't be saved."))return;
+    clearInterval(timer);
+    playing=false;
+    paused=false;
+    $("pause").classList.remove("on");
+  }
+  menu();
+};
 
 $("home").onclick=menu;
 
